@@ -53,8 +53,16 @@ export function getAdminConfig(): AdminConfig {
   return DEFAULT_ADMIN_CONFIG;
 }
 
+import {
+  syncSaveAdminConfig,
+  syncSaveEmployees,
+  syncSaveTasks,
+  syncSaveAttendanceRecords,
+} from './firestoreSync';
+
 export function saveAdminConfig(config: AdminConfig) {
   localStorage.setItem(STORAGE_KEYS.ADMIN_CONFIG, JSON.stringify(config));
+  syncSaveAdminConfig(config);
 }
 
 function getTodayString(): string {
@@ -110,6 +118,7 @@ export function getEmployees(): Employee[] {
 
 export function saveEmployees(employees: Employee[]) {
   localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(employees));
+  syncSaveEmployees(employees);
 }
 
 export function getTasks(): TaskLocation[] {
@@ -120,6 +129,7 @@ export function getTasks(): TaskLocation[] {
 
 export function saveTasks(tasks: TaskLocation[]) {
   localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+  syncSaveTasks(tasks);
 }
 
 export function getAttendanceRecords(): AttendanceRecord[] {
@@ -130,6 +140,7 @@ export function getAttendanceRecords(): AttendanceRecord[] {
 
 export function saveAttendanceRecords(records: AttendanceRecord[]) {
   localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(records));
+  syncSaveAttendanceRecords(records);
 }
 
 // Session Management

@@ -17,6 +17,7 @@ import {
   initializeStorage,
   getAdminConfig,
 } from './lib/storage';
+import { initFirestoreSync, DATA_UPDATED_EVENT } from './lib/firestoreSync';
 
 import { Navbar } from './components/Navbar';
 import { CameraModal } from './components/CameraModal';
@@ -31,9 +32,21 @@ import { AdminTugas } from './views/AdminTugas';
 import { AdminRekap } from './views/AdminRekap';
 
 export default function App() {
-  // 1. Initialize data storage & session
+  // 1. Initialize data storage & Firestore real-time sync
   useEffect(() => {
     initializeStorage();
+    initFirestoreSync();
+
+    const handleSyncUpdate = () => {
+      setEmployees(getEmployees());
+      setTasks(getTasks());
+      setRecords(getAttendanceRecords());
+    };
+
+    window.addEventListener(DATA_UPDATED_EVENT, handleSyncUpdate);
+    return () => {
+      window.removeEventListener(DATA_UPDATED_EVENT, handleSyncUpdate);
+    };
   }, []);
 
   const [session, setSession] = useState<UserSession | null>(() => getCurrentSession());
