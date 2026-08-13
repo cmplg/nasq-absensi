@@ -11,6 +11,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!key || key !== apiSecret) return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  if (!process.env.DATABASE_URL) return res.status(500).json({ error: 'Server misconfigured: DATABASE_URL not set' });
+
   const client = new Client({ connectionString: process.env.DATABASE_URL });
   try {
     await client.connect();

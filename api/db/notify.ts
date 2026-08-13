@@ -14,6 +14,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   if (!channel || !ALLOWED_CHANNELS.includes(channel)) return res.status(400).json({ error: 'Invalid channel' });
 
+  if (!process.env.DATABASE_URL) return res.status(500).json({ error: 'Server misconfigured: DATABASE_URL not set' });
+
   const client = new Client({ connectionString: process.env.DATABASE_URL });
   try {
     await client.connect();

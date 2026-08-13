@@ -13,6 +13,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { sql, params } = req.body || {};
   if (!sql) return res.status(400).json({ error: 'Missing sql in body' });
+  if (!process.env.DATABASE_URL) return res.status(500).json({ error: 'Server misconfigured: DATABASE_URL not set' });
 
   const client = new Client({ connectionString: process.env.DATABASE_URL });
   try {
