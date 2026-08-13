@@ -32,7 +32,7 @@ export const SUPERUSER_EMPLOYEE: Employee = {
 };
 
 const DATABASE_URL =
-  import.meta.env.VITE_DATABASE_URL ||
+  (import.meta as any).env?.VITE_DATABASE_URL ||
   'postgresql://neondb_owner:npg_s2YSWA8eDupm@ep-holy-morning-az8htned-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require';
 
 export const sql = neon(DATABASE_URL);
@@ -82,10 +82,20 @@ export async function ensureNeonTables() {
         longitude DOUBLE PRECISION NOT NULL,
         radius_meter DOUBLE PRECISION NOT NULL,
         assigned_employee_ids TEXT[] DEFAULT '{}',
+        start_date VARCHAR(50),
+        end_date VARCHAR(50),
+        status VARCHAR(50) DEFAULT 'aktif',
+        location_photo TEXT,
         is_active BOOLEAN DEFAULT TRUE,
         created_at VARCHAR(100) NOT NULL
       );
     `;
+
+    // Migration columns for tasks if table already existed
+    await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS start_date VARCHAR(50);`;
+    await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS end_date VARCHAR(50);`;
+    await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'aktif';`;
+    await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS location_photo TEXT;`;
 
     // 4. Create attendance
     await sql`
@@ -102,16 +112,19 @@ export async function ensureNeonTables() {
         latitude DOUBLE PRECISION NOT NULL,
         longitude DOUBLE PRECISION NOT NULL,
         address TEXT,
-        photo TEXT,
+        verified_photo TEXT,
         notes TEXT,
         early_reason_category VARCHAR(150),
         early_reason_notes TEXT,
         task_id VARCHAR(100),
         task_title VARCHAR(200),
-        verified_face BOOLEAN DEFAULT FALSE,
-        face_confidence DOUBLE PRECISION
+        distance_from_task_meters DOUBLE PRECISION
       );
     `;
+
+    // Migration columns for attendance if table already existed
+    await sql`ALTER TABLE attendance ADD COLUMN IF NOT EXISTS verified_photo TEXT;`;
+    await sql`ALTER TABLE attendance ADD COLUMN IF NOT EXISTS distance_from_task_meters DOUBLE PRECISION;`;
 
     // Seed admin_config if empty
     const adminRows = await sql`SELECT * FROM admin_config WHERE id = 'main'`;
@@ -259,6 +272,7 @@ export async function saveEmployeeToNeon(emp: Employee): Promise<void> {
     console.log('✅ Karyawan berhasil disimpan ke database Neon PostgreSQL:', emp.name);
   } catch (err) {
     console.error('❌ Gagal menyimpan Karyawan ke Neon:', err);
+    throw err;
   }
 }
 
@@ -269,6 +283,7 @@ export async function deleteEmployeeFromNeon(id: string): Promise<void> {
     console.log('✅ Karyawan dihapus dari Neon PostgreSQL:', id);
   } catch (err) {
     console.error('❌ Gagal menghapus Karyawan dari Neon:', err);
+    throw err;
   }
 }
 
@@ -279,12 +294,32 @@ export async function fetchTasksFromNeon(): Promise<TaskLocation[]> {
     const rows = await sql`
       SELECT 
         id, title, description, address, latitude, longitude,
-        radius_meter AS "radiusMeter", assigned_employee_ids AS "assignedEmployeeIds",
-        is_active AS "isActive", created_at AS "createdAt"
+        radius_meter AS "radiusMeters",
+        assigned_employee_ids AS "assignedEmployeeIds",
+        COALESCE(start_date, '') AS "startDate",
+        COALESCE(end_date, '') AS "endDate",
+        COALESCE(status, 'aktif') AS "status",
+        COALESCE(location_photo, '') AS "locationPhoto",
+        is_active AS "isActive",
+        created_at AS "createdAt"
       FROM tasks
       ORDER BY created_at DESC
     `;
-    return rows as unknown as TaskLocation[];
+    return rows.map((r: any) => ({
+      id: r.id,
+      title: r.title,
+      description: r.description || '',
+      address: r.address || '',
+      latitude: Number(r.latitude),
+      longitude: Number(r.longitude),
+      radiusMeters: Number(r.radiusMeters || 150),
+      assignedEmployeeIds: Array.isArray(r.assignedEmployeeIds) ? r.assignedEmployeeIds : [],
+      startDate: r.startDate || new Date().toISOString().split('T')[0],
+      endDate: r.endDate || new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0],
+      status: r.status || 'aktif',
+      locationPhoto: r.locationPhoto || '',
+      createdAt: r.createdAt || new Date().toISOString(),
+    })) as TaskLocation[];
   } catch (err) {
     console.error('Error fetching tasks from Neon:', err);
     return [];
@@ -298,7 +333,7 @@ export async function saveTaskToNeon(task: TaskLocation): Promise<void> {
     await sql`
       INSERT INTO tasks (
         id, title, description, address, latitude, longitude,
-        radius_meter, assigned_employee_ids, is_active, created_at
+        radius_meter, assigned_employee_ids, start_date, end_date, status, location_photo, is_active, created_at
       ) VALUES (
         ${task.id},
         ${task.title},
@@ -306,9 +341,13 @@ export async function saveTaskToNeon(task: TaskLocation): Promise<void> {
         ${task.address || ''},
         ${task.latitude},
         ${task.longitude},
-        ${task.radiusMeter},
+        ${task.radiusMeters || 150},
         ${assigned},
-        ${task.isActive ?? true},
+        ${task.startDate || new Date().toISOString().split('T')[0]},
+        ${task.endDate || new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0]},
+        ${task.status || 'aktif'},
+        ${task.locationPhoto || ''},
+        ${task.status === 'aktif'},
         ${task.createdAt || new Date().toISOString()}
       )
       ON CONFLICT (id) DO UPDATE SET
@@ -317,13 +356,19 @@ export async function saveTaskToNeon(task: TaskLocation): Promise<void> {
         address = ${task.address || ''},
         latitude = ${task.latitude},
         longitude = ${task.longitude},
-        radius_meter = ${task.radiusMeter},
+        radius_meter = ${task.radiusMeters || 150},
         assigned_employee_ids = ${assigned},
-        is_active = ${task.isActive ?? true},
+        start_date = ${task.startDate || new Date().toISOString().split('T')[0]},
+        end_date = ${task.endDate || new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0]},
+        status = ${task.status || 'aktif'},
+        location_photo = ${task.locationPhoto || ''},
+        is_active = ${task.status === 'aktif'},
         created_at = ${task.createdAt || new Date().toISOString()}
     `;
+    console.log('✅ Task penugasan berhasil disimpan ke Neon:', task.title);
   } catch (err) {
-    console.error('Error saving task to Neon:', err);
+    console.error('❌ Gagal menyimpan Task ke Neon:', err);
+    throw err;
   }
 }
 
@@ -331,8 +376,10 @@ export async function deleteTaskFromNeon(id: string): Promise<void> {
   await ensureNeonTables();
   try {
     await sql`DELETE FROM tasks WHERE id = ${id}`;
+    console.log('✅ Task penugasan berhasil dihapus dari Neon:', id);
   } catch (err) {
     console.error('Error deleting task from Neon:', err);
+    throw err;
   }
 }
 
@@ -345,14 +392,35 @@ export async function fetchAttendanceFromNeon(): Promise<AttendanceRecord[]> {
         id, employee_id AS "employeeId", employee_name AS "employeeName",
         employee_position AS "employeePosition", type, timestamp,
         date_string AS "dateString", time_string AS "timeString", status,
-        latitude, longitude, address, photo, notes,
+        latitude, longitude, address,
+        COALESCE(verified_photo, '') AS "verifiedPhoto", notes,
         early_reason_category AS "earlyReasonCategory", early_reason_notes AS "earlyReasonNotes",
         task_id AS "taskId", task_title AS "taskTitle",
-        verified_face AS "verifiedFace", face_confidence AS "faceConfidence"
+        distance_from_task_meters AS "distanceFromTaskMeters"
       FROM attendance
       ORDER BY timestamp DESC
     `;
-    return rows as unknown as AttendanceRecord[];
+    return rows.map((r: any) => ({
+      id: r.id,
+      employeeId: r.employeeId,
+      employeeName: r.employeeName,
+      employeePosition: r.employeePosition || '',
+      type: r.type,
+      timestamp: r.timestamp,
+      dateString: r.dateString,
+      timeString: r.timeString,
+      status: r.status,
+      verifiedPhoto: r.verifiedPhoto || '',
+      latitude: Number(r.latitude),
+      longitude: Number(r.longitude),
+      address: r.address || '',
+      taskId: r.taskId || '',
+      taskTitle: r.taskTitle || '',
+      distanceFromTaskMeters: r.distanceFromTaskMeters ? Number(r.distanceFromTaskMeters) : undefined,
+      earlyReasonCategory: r.earlyReasonCategory || '',
+      earlyReasonNotes: r.earlyReasonNotes || '',
+      notes: r.notes || '',
+    })) as AttendanceRecord[];
   } catch (err) {
     console.error('Error fetching attendance from Neon:', err);
     return [];
@@ -365,9 +433,9 @@ export async function saveAttendanceToNeon(a: AttendanceRecord): Promise<void> {
     await sql`
       INSERT INTO attendance (
         id, employee_id, employee_name, employee_position, type, timestamp,
-        date_string, time_string, status, latitude, longitude, address, photo,
+        date_string, time_string, status, latitude, longitude, address, verified_photo,
         notes, early_reason_category, early_reason_notes, task_id, task_title,
-        verified_face, face_confidence
+        distance_from_task_meters
       ) VALUES (
         ${a.id},
         ${a.employeeId},
@@ -381,14 +449,13 @@ export async function saveAttendanceToNeon(a: AttendanceRecord): Promise<void> {
         ${a.latitude},
         ${a.longitude},
         ${a.address || ''},
-        ${a.photo || ''},
+        ${a.verifiedPhoto || ''},
         ${a.notes || ''},
         ${a.earlyReasonCategory || ''},
         ${a.earlyReasonNotes || ''},
         ${a.taskId || ''},
         ${a.taskTitle || ''},
-        ${a.verifiedFace ?? false},
-        ${a.faceConfidence || 0}
+        ${a.distanceFromTaskMeters || 0}
       )
       ON CONFLICT (id) DO UPDATE SET
         employee_id = ${a.employeeId},
@@ -402,16 +469,17 @@ export async function saveAttendanceToNeon(a: AttendanceRecord): Promise<void> {
         latitude = ${a.latitude},
         longitude = ${a.longitude},
         address = ${a.address || ''},
-        photo = ${a.photo || ''},
+        verified_photo = ${a.verifiedPhoto || ''},
         notes = ${a.notes || ''},
         early_reason_category = ${a.earlyReasonCategory || ''},
         early_reason_notes = ${a.earlyReasonNotes || ''},
         task_id = ${a.taskId || ''},
         task_title = ${a.taskTitle || ''},
-        verified_face = ${a.verifiedFace ?? false},
-        face_confidence = ${a.faceConfidence || 0}
+        distance_from_task_meters = ${a.distanceFromTaskMeters || 0}
     `;
+    console.log('✅ Absensi berhasil disimpan ke Neon:', a.employeeName);
   } catch (err) {
     console.error('Error saving attendance to Neon:', err);
+    throw err;
   }
 }

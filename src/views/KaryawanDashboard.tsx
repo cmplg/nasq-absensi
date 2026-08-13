@@ -164,7 +164,7 @@ export function KaryawanDashboard({
   } else if (masukRecord && !pulangRecord) {
     statusBadge = {
       label: 'Sudah Absen Datang',
-      subtext: `Tercatat masuk pukul ${masukRecord.timeString.substring(0, 5)} WIB (${masukRecord.isLate ? 'Terlambat' : 'Tepat Waktu'}).`,
+      subtext: `Tercatat masuk pukul ${masukRecord.timeString.substring(0, 5)} WIB (${masukRecord.status === 'terlambat' ? 'Terlambat' : 'Tepat Waktu'}).`,
       bgColor: 'bg-emerald-50 text-emerald-900 border-emerald-200/90',
       icon: CheckCircle2,
       iconColor: 'text-emerald-600',

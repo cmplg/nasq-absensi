@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Employee, TaskLocation, AttendanceRecord } from '../types';
 import { formatIndonesianDate } from '../lib/geo';
 import { getAdminConfig, saveAdminConfig } from '../lib/storage';
