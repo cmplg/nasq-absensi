@@ -266,6 +266,35 @@ export function CameraModal({
     }, 1200);
   };
 
+  if (assignedTasks.length === 0) {
+    return (
+      <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+        <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden p-6 sm:p-8 text-center space-y-5 my-auto">
+          <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-3xl flex items-center justify-center mx-auto border-2 border-amber-300">
+            <AlertCircle className="w-8 h-8" />
+          </div>
+          <div className="space-y-2">
+            <span className="px-3 py-1 bg-amber-100 text-amber-800 text-[10px] font-black uppercase rounded-full">
+              Belum Ada Penugasan
+            </span>
+            <h3 className="text-xl font-black text-slate-900">
+              Belum Ada Tugas Aktif
+            </h3>
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              Anda tidak dapat melakukan presensi karena belum memiliki penugasan lokasi kerja aktif saat ini. Penugasan sebelumnya mungkin telah selesai atau dihapus oleh Administrator.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-black rounded-2xl text-xs transition shadow-md"
+          >
+            Tutup
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-auto">
@@ -402,11 +431,17 @@ export function CameraModal({
               {/* Receipt Snapshot Card */}
               <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-left space-y-3 text-xs">
                 <div className="flex items-center space-x-3 pb-3 border-b border-slate-200">
-                  <img
-                    src={successRecord.verifiedPhoto}
-                    alt="Foto Verifikasi"
-                    className="w-14 h-14 rounded-lg object-cover border border-slate-300 shadow-sm"
-                  />
+                  {successRecord.verifiedPhoto ? (
+                    <img
+                      src={successRecord.verifiedPhoto}
+                      alt="Foto Verifikasi"
+                      className="w-14 h-14 rounded-lg object-cover border border-slate-300 shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-lg bg-slate-200 border border-slate-300 flex items-center justify-center text-[10px] font-bold text-slate-500">
+                      No Foto
+                    </div>
+                  )}
                   <div>
                     <p className="font-bold text-slate-900 text-sm">{successRecord.employeeName}</p>
                     <p className="text-slate-500">{successRecord.employeePosition}</p>

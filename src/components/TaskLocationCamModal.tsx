@@ -173,7 +173,7 @@ export function TaskLocationCamModal({
                   🔄 Coba Muat Ulang Kamera
                 </button>
               </div>
-            ) : capturedImage ? (
+            ) : capturedImage && capturedImage.trim() !== '' ? (
               <img
                 src={capturedImage}
                 alt="Foto Hasil Tangkapan Kamera"

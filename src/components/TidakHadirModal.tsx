@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { AttendanceRecord, Employee } from '../types';
+import { AttendanceRecord, Employee, TaskLocation } from '../types';
 import { formatIndonesianDate, formatIndonesianTime } from '../lib/geo';
-import { FileText, AlertTriangle, X, CheckCircle2, ArrowRight } from 'lucide-react';
+import { FileText, AlertTriangle, X, CheckCircle2, ArrowRight, Briefcase } from 'lucide-react';
 
 interface TidakHadirModalProps {
   isOpen: boolean;
   onClose: () => void;
   employee: Employee;
+  assignedTasks?: TaskLocation[];
   onSubmitSuccess: (record: AttendanceRecord) => void;
   userLat: number | null;
   userLng: number | null;
@@ -26,6 +27,7 @@ export function TidakHadirModal({
   isOpen,
   onClose,
   employee,
+  assignedTasks,
   onSubmitSuccess,
   userLat,
   userLng,
@@ -143,6 +145,8 @@ export function TidakHadirModal({
       finalAddress
     );
 
+    const activeTask = assignedTasks && assignedTasks.length > 0 ? assignedTasks[0] : null;
+
     const record: AttendanceRecord = {
       id: `att-izin-${Date.now()}`,
       employeeId: employee.id,
@@ -157,7 +161,8 @@ export function TidakHadirModal({
       latitude: userLat || -6.2183,
       longitude: userLng || 106.8172,
       address: finalAddress,
-      taskTitle: 'Pengajuan Tidak Hadir / Izin',
+      taskId: activeTask ? activeTask.id : undefined,
+      taskTitle: activeTask ? activeTask.title : 'Pengajuan Tidak Hadir / Izin',
       earlyReasonCategory: category,
       earlyReasonNotes: customNotes.trim() || undefined,
       notes: `Pengajuan Tidak Hadir: ${category}${customNotes ? ` - ${customNotes}` : ''}`,

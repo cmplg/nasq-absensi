@@ -243,7 +243,7 @@ export function AdminKaryawan({
                       <td className="p-4">
                         <div className="flex items-center space-x-3">
                           <img
-                            src={emp.masterPhotos[0] || 'https://via.placeholder.com/150'}
+                            src={emp.masterPhotos && emp.masterPhotos[0] && emp.masterPhotos[0].trim() !== '' ? emp.masterPhotos[0] : 'https://via.placeholder.com/150'}
                             alt={emp.name}
                             className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-sm bg-slate-100 shrink-0"
                           />
@@ -463,7 +463,7 @@ export function AdminKaryawan({
                   Foto ini digunakan sebagai acuan pencocokan wajah saat karyawan melakukan presensi.
                 </p>
 
-                {formData.masterPhotos.length > 0 ? (
+                {formData.masterPhotos && formData.masterPhotos[0] && formData.masterPhotos[0].trim() !== '' ? (
                   <div className="flex items-center space-x-3 bg-slate-50 p-3 rounded-2xl border border-slate-200">
                     <img
                       src={formData.masterPhotos[0]}

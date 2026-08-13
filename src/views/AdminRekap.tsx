@@ -411,11 +411,17 @@ export function AdminRekap({
                   <tr key={r.id} className="hover:bg-slate-50/80 transition">
                     <td className="p-4">
                       <div className="flex items-center space-x-3">
-                        <img
-                          src={r.verifiedPhoto}
-                          alt="Verifikasi Wajah"
-                          className="w-11 h-11 rounded-xl object-cover border border-slate-300 shadow-xs bg-slate-100 shrink-0"
-                        />
+                        {r.verifiedPhoto && r.verifiedPhoto.trim() !== '' ? (
+                          <img
+                            src={r.verifiedPhoto}
+                            alt="Verifikasi Wajah"
+                            className="w-11 h-11 rounded-xl object-cover border border-slate-300 shadow-xs bg-slate-100 shrink-0"
+                          />
+                        ) : (
+                          <div className="w-11 h-11 rounded-xl bg-slate-100 border border-slate-300 shrink-0 flex items-center justify-center text-slate-400 font-bold text-[10px]">
+                            No Foto
+                          </div>
+                        )}
                         <div>
                           <p className="font-bold text-slate-900 text-sm">{r.employeeName}</p>
                           <p className="text-[11px] text-slate-400">{r.employeePosition}</p>
@@ -509,16 +515,18 @@ export function AdminRekap({
             </div>
 
             {/* Photo Watermark Display */}
-            <div className="space-y-1.5">
-              <p className="font-bold text-slate-800">Foto Hasil Capture Watermarked:</p>
-              <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-slate-950">
-                <img
-                  src={selectedRecord.verifiedPhoto}
-                  alt="Verifikasi Watermark"
-                  className="w-full h-60 object-contain mx-auto"
-                />
+            {selectedRecord.verifiedPhoto && selectedRecord.verifiedPhoto.trim() !== '' ? (
+              <div className="space-y-1.5">
+                <p className="font-bold text-slate-800">Foto Hasil Capture Watermarked:</p>
+                <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-slate-950">
+                  <img
+                    src={selectedRecord.verifiedPhoto}
+                    alt="Verifikasi Watermark"
+                    className="w-full h-60 object-contain mx-auto"
+                  />
+                </div>
               </div>
-            </div>
+            ) : null}
 
             <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-2">
               <div className="flex justify-between items-start">

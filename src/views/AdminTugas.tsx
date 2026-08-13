@@ -366,7 +366,7 @@ export function AdminTugas({
                       radiusMeters={task.radiusMeters}
                       taskTitle={task.title}
                     />
-                    {task.locationPhoto && (
+                    {task.locationPhoto && task.locationPhoto.trim() !== '' ? (
                       <div className="absolute top-2 right-2 group z-[400]">
                         <img
                           src={task.locationPhoto}
@@ -377,7 +377,7 @@ export function AdminTugas({
                           Foto
                         </span>
                       </div>
-                    )}
+                    ) : null}
                   </div>
 
                   <div className="p-5 space-y-3">
@@ -711,7 +711,7 @@ export function AdminTugas({
                   Gunakan kamera web atau unggah foto patokan lokasi dengan resolusi otomatis terkompresi (~80KB) agar ringan & cepat.
                 </p>
 
-                {formData.locationPhoto ? (
+                {formData.locationPhoto && formData.locationPhoto.trim() !== '' ? (
                   <div className="rounded-2xl border border-slate-300 bg-slate-50 flex items-center justify-between p-3 gap-3">
                     <img
                       src={formData.locationPhoto}

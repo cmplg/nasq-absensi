@@ -119,19 +119,21 @@ export function KaryawanDashboard({
   };
 
   // Today's attendance records for active status display & action buttons
-  // Filter to only include records from currently active assigned tasks (or non-task records)
+  // Filter to strictly only include records from currently active assigned tasks
   const activeTaskIds = assignedTasks.map((t) => t.id);
   const activeTodayRecords = todayRecords.filter((r) => {
-    if (!r.taskId) return true;
+    if (activeTaskIds.length === 0) return false;
+    if (!r.taskId) return false;
     return activeTaskIds.includes(r.taskId);
   });
 
   const masukRecord = activeTodayRecords.find((r) => r.type === 'masuk');
   const pulangRecord = activeTodayRecords.find((r) => r.type === 'pulang');
-  const izinRecord = activeTodayRecords.find((r) => r.type === 'izin') || todayRecords.find((r) => r.type === 'izin');
+  const izinRecord = activeTodayRecords.find((r) => r.type === 'izin');
 
   // Check if current time is past shiftStart and employee has not checked in
   const checkIsOverdue = () => {
+    if (assignedTasks.length === 0) return false;
     if (masukRecord || izinRecord) return false;
     if (!employee.shiftStart) return false;
     const [shiftH, shiftM] = employee.shiftStart.split(':').map(Number);
@@ -153,7 +155,15 @@ export function KaryawanDashboard({
     iconColor: 'text-amber-600',
   };
 
-  if (izinRecord) {
+  if (assignedTasks.length === 0) {
+    statusBadge = {
+      label: 'Belum Ada Penugasan Tugas',
+      subtext: 'Tidak ada tugas aktif untuk Anda saat ini. Status presensi otomatis direset.',
+      bgColor: 'bg-slate-100 text-slate-800 border-slate-300/90',
+      icon: Briefcase,
+      iconColor: 'text-slate-600',
+    };
+  } else if (izinRecord) {
     statusBadge = {
       label: 'Konfirmasi Tidak Hadir / Izin',
       subtext: `Keterangan: ${izinRecord.earlyReasonCategory || 'Pernyataan Tidak Hadir'}${izinRecord.earlyReasonNotes ? ` (${izinRecord.earlyReasonNotes})` : ''}.`,
@@ -224,8 +234,30 @@ export function KaryawanDashboard({
         </div>
       </div>
 
-      {/* Overdue Check-in Notification Banner */}
-      {isOverdue && (
+      {/* Penugasan Status & Overdue Banner */}
+      {assignedTasks.length === 0 ? (
+        <div className="bg-amber-50 border-2 border-amber-300 p-5 rounded-3xl space-y-3 shadow-md animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex items-start space-x-3.5">
+            <div className="p-2.5 bg-amber-100 text-amber-800 rounded-2xl shrink-0 border border-amber-200">
+              <Briefcase className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2">
+                <span className="px-2.5 py-0.5 bg-amber-600 text-white text-[10px] font-black uppercase rounded-full tracking-wider">
+                  Notifikasi Penugasan
+                </span>
+                <span className="text-[11px] font-bold text-amber-800">Status Reset</span>
+              </div>
+              <h3 className="font-black text-slate-900 text-base">
+                Belum Ada Penugasan Tugas Aktif
+              </h3>
+              <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                Anda saat ini belum memiliki lokasi tugas aktif yang ditugaskan. Penugasan sebelumnya mungkin telah selesai atau dihapus oleh Administrator, sehingga status absen masuk, pulang, atau izin Anda otomatis direset. Silakan hubungi Administrator untuk mendapatkan penugasan lokasi baru.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : isOverdue ? (
         <div className="bg-rose-50 border-2 border-rose-300 p-5 rounded-3xl space-y-3.5 shadow-md animate-in fade-in zoom-in-95 duration-200">
           <div className="flex items-start space-x-3.5">
             <div className="p-2.5 bg-rose-100 text-rose-700 rounded-2xl shrink-0 border border-rose-200">
@@ -267,7 +299,7 @@ export function KaryawanDashboard({
             </button>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Today's Status Card */}
       <div className={`p-5 rounded-3xl border flex items-center justify-between shadow-2xs transition-all ${statusBadge.bgColor}`}>
@@ -529,7 +561,7 @@ export function KaryawanDashboard({
                 className="p-4 sm:p-5 bg-slate-50/90 hover:bg-slate-100/80 rounded-3xl border border-slate-200/90 text-xs space-y-3.5 transition shadow-2xs"
               >
                 {/* Task Photo Banner (if uploaded by Admin) */}
-                {t.locationPhoto && (
+                {t.locationPhoto && t.locationPhoto.trim() !== '' ? (
                   <div className="relative rounded-2xl overflow-hidden h-36 w-full border border-slate-200 shadow-inner group">
                     <img
                       src={t.locationPhoto}
@@ -542,7 +574,7 @@ export function KaryawanDashboard({
                       </span>
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1">
@@ -613,6 +645,7 @@ export function KaryawanDashboard({
         isOpen={showTidakHadirModal}
         onClose={() => setShowTidakHadirModal(false)}
         employee={employee}
+        assignedTasks={assignedTasks}
         onSubmitSuccess={(record) => {
           if (onAttendanceSubmit) {
             onAttendanceSubmit(record);

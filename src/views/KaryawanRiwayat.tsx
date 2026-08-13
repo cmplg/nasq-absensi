@@ -208,11 +208,17 @@ export function KaryawanRiwayat({ employee, records, tasks }: KaryawanRiwayatPro
                   className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-slate-300 shadow-sm transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                 >
                   <div className="flex items-start space-x-3.5">
-                    <img
-                      src={r.verifiedPhoto}
-                      alt="Foto Presensi"
-                      className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0 bg-slate-100 shadow-sm"
-                    />
+                    {r.verifiedPhoto && r.verifiedPhoto.trim() !== '' ? (
+                      <img
+                        src={r.verifiedPhoto}
+                        alt="Foto Presensi"
+                        className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0 bg-slate-100 shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-400 font-bold text-[10px]">
+                        No Foto
+                      </div>
+                    )}
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2">
                         <span className="font-bold text-slate-900 text-sm">
@@ -265,7 +271,7 @@ export function KaryawanRiwayat({ employee, records, tasks }: KaryawanRiwayatPro
             empTasks.map((t) => (
               <div key={t.id} className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3.5 text-xs">
                 {/* Location photo banner if uploaded */}
-                {t.locationPhoto && (
+                {t.locationPhoto && t.locationPhoto.trim() !== '' ? (
                   <div className="relative rounded-2xl overflow-hidden h-40 w-full border border-slate-200 shadow-inner group">
                     <img
                       src={t.locationPhoto}
@@ -278,7 +284,7 @@ export function KaryawanRiwayat({ employee, records, tasks }: KaryawanRiwayatPro
                       </span>
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1">
@@ -347,20 +353,22 @@ export function KaryawanRiwayat({ employee, records, tasks }: KaryawanRiwayatPro
               </button>
             </div>
 
-            <div className="flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-              <img
-                src={selectedRecord.verifiedPhoto}
-                alt="Verifikasi"
-                className="w-16 h-16 rounded-xl object-cover border border-slate-300 shadow-sm"
-              />
-              <div className="space-y-1">
-                <p className="font-bold text-slate-900 text-sm">{selectedRecord.employeeName}</p>
-                <p className="text-slate-500">{selectedRecord.employeePosition}</p>
-                <p className="font-mono text-slate-700 font-bold text-xs">
-                  {formatIndonesianDate(selectedRecord.timestamp)} • {selectedRecord.timeString} WIB
-                </p>
+            {selectedRecord.verifiedPhoto && selectedRecord.verifiedPhoto.trim() !== '' ? (
+              <div className="flex items-center space-x-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <img
+                  src={selectedRecord.verifiedPhoto}
+                  alt="Verifikasi"
+                  className="w-16 h-16 rounded-xl object-cover border border-slate-300 shadow-sm"
+                />
+                <div className="space-y-1">
+                  <p className="font-bold text-slate-900 text-sm">{selectedRecord.employeeName}</p>
+                  <p className="text-slate-500">{selectedRecord.employeePosition}</p>
+                  <p className="font-mono text-slate-700 font-bold text-xs">
+                    {formatIndonesianDate(selectedRecord.timestamp)} • {selectedRecord.timeString} WIB
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : null}
 
             <div className="space-y-2 border-t border-slate-100 pt-3 text-slate-700">
               <div>

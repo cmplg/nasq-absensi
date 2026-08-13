@@ -268,11 +268,17 @@ export function AdminOverview({
                   className="p-4 sm:p-5 flex items-center justify-between gap-4 text-xs hover:bg-slate-50/80 transition"
                 >
                   <div className="flex items-center space-x-3.5 truncate">
-                    <img
-                      src={r.verifiedPhoto}
-                      alt="Verifikasi"
-                      className="w-12 h-12 rounded-2xl object-cover border border-slate-200 shrink-0 shadow-2xs bg-slate-100"
-                    />
+                    {r.verifiedPhoto && r.verifiedPhoto.trim() !== '' ? (
+                      <img
+                        src={r.verifiedPhoto}
+                        alt="Verifikasi"
+                        className="w-12 h-12 rounded-2xl object-cover border border-slate-200 shrink-0 shadow-2xs bg-slate-100"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 border border-slate-200 shrink-0 flex items-center justify-center text-slate-400 font-bold text-[10px]">
+                        No Foto
+                      </div>
+                    )}
                     <div className="truncate space-y-0.5">
                       <div className="flex items-center space-x-2">
                         <span className="font-extrabold text-slate-900 text-sm truncate">{r.employeeName}</span>
