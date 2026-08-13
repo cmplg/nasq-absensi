@@ -6,6 +6,12 @@ const ALLOWED_CHANNELS = ['nasq_data_updated'];
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { channel, payload } = req.body || {};
+  // API key enforcement (optional): if API_SECRET is set, require matching header
+  const apiSecret = process.env.API_SECRET;
+  if (apiSecret) {
+    const key = (req.headers['x-api-key'] as string) || '';
+    if (!key || key !== apiSecret) return res.status(401).json({ error: 'Unauthorized' });
+  }
   if (!channel || !ALLOWED_CHANNELS.includes(channel)) return res.status(400).json({ error: 'Invalid channel' });
 
   const client = new Client({ connectionString: process.env.DATABASE_URL });

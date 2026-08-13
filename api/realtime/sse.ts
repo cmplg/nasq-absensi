@@ -11,6 +11,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const channel = process.env.NEON_REALTIME_CHANNEL || 'nasq_data_updated';
 
+  // API key enforcement for SSE: if API_SECRET is set, allow connection only when
+  // client provides matching header `x-api-key` OR query param `token`.
+  const apiSecret = process.env.API_SECRET;
+  if (apiSecret) {
+    const headerKey = (req.headers['x-api-key'] as string) || '';
+    const urlToken = (req.query && (req.query as any).token) || '';
+    if (!headerKey && !urlToken) return res.status(401).end('Unauthorized');
+    if ((headerKey && headerKey !== apiSecret) || (urlToken && urlToken !== apiSecret))
+      return res.status(401).end('Unauthorized');
+  }
+
   const client = new Client({ connectionString: process.env.DATABASE_URL });
   await client.connect();
 

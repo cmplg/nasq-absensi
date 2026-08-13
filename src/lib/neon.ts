@@ -18,8 +18,8 @@ export async function notifyRealtime(channel: string, payload: any) {
   return res.json();
 }
 
-export function initNeonRealtime(onMessage: (payload: string) => void) {
-  const sseUrl = '/api/realtime/sse';
+export function initNeonRealtime(onMessage: (payload: string) => void, token?: string) {
+  const sseUrl = token ? `/api/realtime/sse?token=${encodeURIComponent(token)}` : '/api/realtime/sse';
   const es = new EventSource(sseUrl);
   es.onmessage = (ev) => {
     onMessage(ev.data);
