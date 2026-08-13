@@ -1,5 +1,4 @@
 import { Employee, TaskLocation, AttendanceRecord } from '../types';
-import { dbQuery, initNeonRealtime, notifyRealtime } from './neon';
 
 export interface AdminConfig {
   username: string;
@@ -37,7 +36,7 @@ function notifyDataChanged() {
   window.dispatchEvent(new CustomEvent(DATA_UPDATED_EVENT));
 }
 
-// In-Memory Realtime Cache (No localStorage for app data)
+// In-Memory Realtime Cache
 let memAdminConfig: AdminConfig = DEFAULT_ADMIN_CONFIG;
 let memEmployees: Employee[] = [SUPERUSER_EMPLOYEE];
 let memTasks: TaskLocation[] = [];
@@ -75,13 +74,43 @@ export function getLiveAttendance(): AttendanceRecord[] {
 }
 
 let isSyncInitialized = false;
-let neonCloseFn: (() => void) | null = null;
+
+export async function refreshAllDataFromBackend() {
+  try {
+    const [cfgRes, empRes, taskRes, attRes] = await Promise.all([
+      fetch('/api/admin-config'),
+      fetch('/api/employees'),
+      fetch('/api/tasks'),
+      fetch('/api/attendance'),
+    ]);
+
+    if (cfgRes.ok) {
+      memAdminConfig = await cfgRes.json();
+    }
+    if (empRes.ok) {
+      const emps: Employee[] = await empRes.json();
+      if (emps && emps.length > 0) {
+        memEmployees = emps;
+      }
+    }
+    if (taskRes.ok) {
+      memTasks = await taskRes.json();
+    }
+    if (attRes.ok) {
+      memAttendance = await attRes.json();
+    }
+
+    notifyDataChanged();
+  } catch (err) {
+    console.warn('Backend sync warning:', err);
+  }
+}
 
 export function initFirestoreSync() {
   if (isSyncInitialized) return;
   isSyncInitialized = true;
 
-  // Cleanup old local storage keys if any exist
+  // Cleanup old local storage keys
   try {
     localStorage.removeItem('nasq_employees_v2');
     localStorage.removeItem('nasq_tasks_v2');
@@ -91,163 +120,27 @@ export function initFirestoreSync() {
     // ignore
   }
 
-  // Initial load from Neon (Postgres JSONB storage)
-  const parseRowData = (row: any) => {
-    const d = row?.data ?? row;
-    if (!d) return null;
-    if (typeof d === 'string') {
-      try {
-        return JSON.parse(d);
-      } catch {
-        return d;
-      }
-    }
-    return d;
-  };
+  // Initial fetch
+  refreshAllDataFromBackend();
 
-  (async () => {
-    try {
-      // Admin config
-      const cfgRes = await dbQuery("SELECT data FROM admin_config WHERE id = $1", ['main']);
-      if (cfgRes && cfgRes.rows && cfgRes.rows[0]) {
-        const d = parseRowData(cfgRes.rows[0]);
-        if (d) memAdminConfig = d as AdminConfig;
-      }
-
-      // Employees
-      const empRes = await dbQuery('SELECT data FROM employees');
-      if (empRes && empRes.rows) {
-        const employees: Employee[] = empRes.rows.map((r: any) => parseRowData(r)).filter(Boolean);
-        if (employees.length > 0) {
-          const hasSuperuser = employees.some(
-            (e) => e.username.toLowerCase() === 'superuser' || e.id === 'emp-superuser' || e.isDeveloper
-          );
-          let list = hasSuperuser ? employees : [SUPERUSER_EMPLOYEE, ...employees];
-          memEmployees = list.map((e) => {
-            if (e.username.toLowerCase() === 'superuser' || e.id === 'emp-superuser' || e.isDeveloper) {
-              return {
-                ...e,
-                username: 'superuser',
-                password: 'ultra',
-                isActive: true,
-                isDeveloper: true,
-              };
-            }
-            return e;
-          });
-        } else {
-          memEmployees = [SUPERUSER_EMPLOYEE];
-        }
-      }
-
-      // Tasks
-      const taskRes = await dbQuery('SELECT data FROM tasks');
-      if (taskRes && taskRes.rows) {
-        memTasks = taskRes.rows.map((r: any) => parseRowData(r)).filter(Boolean) as TaskLocation[];
-      }
-
-      // Attendance
-      const attRes = await dbQuery('SELECT data FROM attendance');
-      if (attRes && attRes.rows) {
-        const recs = attRes.rows.map((r: any) => parseRowData(r)).filter(Boolean) as AttendanceRecord[];
-        recs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        memAttendance = recs;
-      }
-
-      notifyDataChanged();
-    } catch (err) {
-      console.warn('Neon initial load warning:', err);
-    }
-  })();
-
-  // Setup SSE realtime listener — on any notification we'll re-fetch lightweight datasets
-  neonCloseFn = initNeonRealtime(async (payloadStr: string) => {
-    try {
-      // payload may be simple collection name or JSON
-      let payload: any = null;
-      try { payload = JSON.parse(payloadStr); } catch { payload = payloadStr; }
-
-      // For simplicity, re-fetch employees/tasks/attendance/admin config
-      const [empRes2, taskRes2, attRes2, cfgRes2] = await Promise.all([
-        dbQuery('SELECT data FROM employees'),
-        dbQuery('SELECT data FROM tasks'),
-        dbQuery('SELECT data FROM attendance'),
-        dbQuery("SELECT data FROM admin_config WHERE id = $1", ['main']),
-      ]);
-
-      if (empRes2?.rows) {
-        const employees: Employee[] = empRes2.rows.map((r: any) => parseRowData(r)).filter(Boolean);
-        if (employees.length > 0) {
-          const hasSuperuser = employees.some(
-            (e) => e.username.toLowerCase() === 'superuser' || e.id === 'emp-superuser' || e.isDeveloper
-          );
-          let list = hasSuperuser ? employees : [SUPERUSER_EMPLOYEE, ...employees];
-          memEmployees = list.map((e) => {
-            if (e.username.toLowerCase() === 'superuser' || e.id === 'emp-superuser' || e.isDeveloper) {
-              return {
-                ...e,
-                username: 'superuser',
-                password: 'ultra',
-                isActive: true,
-                isDeveloper: true,
-              };
-            }
-            return e;
-          });
-        } else {
-          memEmployees = [SUPERUSER_EMPLOYEE];
-        }
-      }
-
-      if (taskRes2?.rows) memTasks = taskRes2.rows.map((r: any) => parseRowData(r)).filter(Boolean);
-      if (attRes2?.rows) {
-        const recs = attRes2.rows.map((r: any) => parseRowData(r)).filter(Boolean) as AttendanceRecord[];
-        recs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        memAttendance = recs;
-      }
-      if (cfgRes2?.rows && cfgRes2.rows[0]) {
-        const d = parseRowData(cfgRes2.rows[0]);
-        if (d) memAdminConfig = d as AdminConfig;
-      }
-
-      notifyDataChanged();
-    } catch (err) {
-      console.warn('Neon realtime handler warning:', err);
-    }
-  });
-
-  // Seed default admin and superuser if empty
-  seedInitialDataIfEmpty();
+  // Poll backend every 4 seconds for instant cross-device updates
+  setInterval(() => {
+    refreshAllDataFromBackend();
+  }, 4000);
 }
 
-async function seedInitialDataIfEmpty() {
-  try {
-    const empSnap = await getDocs(collection(db, 'employees'));
-    if (empSnap.empty) {
-      await setDoc(doc(db, 'employees', SUPERUSER_EMPLOYEE.id), SUPERUSER_EMPLOYEE);
-    }
-
-    const configSnap = await getDocs(collection(db, 'adminConfig'));
-    if (configSnap.empty) {
-      await setDoc(doc(db, 'adminConfig', 'main'), DEFAULT_ADMIN_CONFIG);
-    }
-  } catch (err) {
-    console.warn('Initial Firestore seed error:', err);
-  }
-}
-
-// Direct Firestore Server Actions
+// Server Actions
 export async function syncSaveAdminConfig(config: AdminConfig) {
   memAdminConfig = config;
   notifyDataChanged();
   try {
-    await dbQuery('INSERT INTO admin_config (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2', [
-      'main',
-      JSON.stringify(config),
-    ]);
-    try { await notifyRealtime(process.env.NEON_REALTIME_CHANNEL || 'nasq_data_updated', JSON.stringify({ collection: 'admin_config' })); } catch {}
+    await fetch('/api/admin-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config),
+    });
   } catch (err) {
-    console.error('Gagal menyimpan Admin Config ke Neon:', err);
+    console.error('Gagal menyimpan Admin Config ke Neon Database:', err);
   }
 }
 
@@ -261,13 +154,14 @@ export async function syncSaveEmployee(employee: Employee) {
   notifyDataChanged();
 
   try {
-    await dbQuery('INSERT INTO employees (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2', [
-      employee.id,
-      JSON.stringify(employee),
-    ]);
-    try { await notifyRealtime(process.env.NEON_REALTIME_CHANNEL || 'nasq_data_updated', JSON.stringify({ collection: 'employees', id: employee.id })); } catch {}
+    await fetch('/api/employees', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(employee),
+    });
+    refreshAllDataFromBackend();
   } catch (err) {
-    console.error('Gagal menyimpan Karyawan ke Neon:', err);
+    console.error('Gagal menyimpan Karyawan ke Neon Database:', err);
   }
 }
 
@@ -276,10 +170,12 @@ export async function syncDeleteEmployee(employeeId: string) {
   notifyDataChanged();
 
   try {
-    await dbQuery('DELETE FROM employees WHERE id = $1', [employeeId]);
-    try { await notifyRealtime(process.env.NEON_REALTIME_CHANNEL || 'nasq_data_updated', JSON.stringify({ collection: 'employees', id: employeeId, action: 'delete' })); } catch {}
+    await fetch(`/api/employees/${employeeId}`, {
+      method: 'DELETE',
+    });
+    refreshAllDataFromBackend();
   } catch (err) {
-    console.error('Gagal menghapus Karyawan dari Neon:', err);
+    console.error('Gagal menghapus Karyawan dari Neon Database:', err);
   }
 }
 
@@ -301,13 +197,14 @@ export async function syncSaveTask(task: TaskLocation) {
   notifyDataChanged();
 
   try {
-    await dbQuery('INSERT INTO tasks (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2', [
-      task.id,
-      JSON.stringify(task),
-    ]);
-    try { await notifyRealtime(process.env.NEON_REALTIME_CHANNEL || 'nasq_data_updated', JSON.stringify({ collection: 'tasks', id: task.id })); } catch {}
+    await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(task),
+    });
+    refreshAllDataFromBackend();
   } catch (err) {
-    console.error('Gagal menyimpan Tugas ke Neon:', err);
+    console.error('Gagal menyimpan Tugas ke Neon Database:', err);
   }
 }
 
@@ -316,10 +213,12 @@ export async function syncDeleteTask(taskId: string) {
   notifyDataChanged();
 
   try {
-    await dbQuery('DELETE FROM tasks WHERE id = $1', [taskId]);
-    try { await notifyRealtime(process.env.NEON_REALTIME_CHANNEL || 'nasq_data_updated', JSON.stringify({ collection: 'tasks', id: taskId, action: 'delete' })); } catch {}
+    await fetch(`/api/tasks/${taskId}`, {
+      method: 'DELETE',
+    });
+    refreshAllDataFromBackend();
   } catch (err) {
-    console.error('Gagal menghapus Tugas dari Neon:', err);
+    console.error('Gagal menghapus Tugas dari Neon Database:', err);
   }
 }
 
@@ -336,13 +235,14 @@ export async function syncAddAttendanceRecord(record: AttendanceRecord) {
   notifyDataChanged();
 
   try {
-    await dbQuery('INSERT INTO attendance (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2', [
-      record.id,
-      JSON.stringify(record),
-    ]);
-    try { await notifyRealtime(process.env.NEON_REALTIME_CHANNEL || 'nasq_data_updated', JSON.stringify({ collection: 'attendance', id: record.id })); } catch {}
+    await fetch('/api/attendance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(record),
+    });
+    refreshAllDataFromBackend();
   } catch (err) {
-    console.error('Gagal menyimpan Presensi ke Neon:', err);
+    console.error('Gagal menyimpan Presensi ke Neon Database:', err);
   }
 }
 
@@ -355,50 +255,13 @@ export async function syncSaveAttendanceRecords(records: AttendanceRecord[]) {
 }
 
 export async function fetchEmployeesDirectFromFirestore(): Promise<Employee[]> {
-  try {
-    const res = await dbQuery('SELECT data FROM employees');
-    if (res && res.rows) {
-      const employees: Employee[] = res.rows.map((r: any) => r.data ?? r).map((d: any) => (typeof d === 'string' ? JSON.parse(d) : d)).filter(Boolean);
-      if (employees.length > 0) {
-        const hasSuperuser = employees.some(
-          (e) => e.username.toLowerCase() === 'superuser' || e.id === 'emp-superuser' || e.isDeveloper
-        );
-        let list = hasSuperuser ? employees : [SUPERUSER_EMPLOYEE, ...employees];
-        memEmployees = list.map((e) => {
-          if (e.username.toLowerCase() === 'superuser' || e.id === 'emp-superuser' || e.isDeveloper) {
-            return {
-              ...e,
-              username: 'superuser',
-              password: 'ultra',
-              isActive: true,
-              isDeveloper: true,
-            };
-          }
-          return e;
-        });
-        notifyDataChanged();
-        return memEmployees;
-      }
-    }
-  } catch (err) {
-    console.warn('Gagal mengambil data karyawan langsung dari Neon:', err);
-  }
+  await refreshAllDataFromBackend();
   return getLiveEmployees();
 }
 
 export async function fetchAdminConfigDirectFromFirestore(): Promise<AdminConfig> {
-  try {
-    const res = await dbQuery("SELECT data FROM admin_config WHERE id = $1", ['main']);
-    if (res && res.rows && res.rows[0]) {
-      const d = res.rows[0].data ?? res.rows[0];
-      const cfg = typeof d === 'string' ? JSON.parse(d) : d;
-      memAdminConfig = cfg as AdminConfig;
-      notifyDataChanged();
-      return memAdminConfig;
-    }
-  } catch (err) {
-    console.warn('Gagal mengambil konfigurasi Admin langsung dari Neon:', err);
-  }
+  await refreshAllDataFromBackend();
   return getLiveAdminConfig();
 }
+
 
