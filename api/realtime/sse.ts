@@ -7,19 +7,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  // Allow cross-origin EventSource connections (use carefully)
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.flushHeaders?.();
 
   const channel = process.env.NEON_REALTIME_CHANNEL || 'nasq_data_updated';
 
-  // API key enforcement for SSE: if API_SECRET is set, allow connection only when
-  // client provides matching header `x-api-key` OR query param `token`.
+  // API key handling for SSE: if client provides `token` or header, validate it.
+  // Do NOT reject connection when token is missing to keep SSE broadly accessible
+  // (POST endpoints remain protected by API_SECRET).
   const apiSecret = process.env.API_SECRET;
-  if (apiSecret) {
-    const headerKey = (req.headers['x-api-key'] as string) || '';
-    const urlToken = (req.query && (req.query as any).token) || '';
-    if (!headerKey && !urlToken) return res.status(401).end('Unauthorized');
-    if ((headerKey && headerKey !== apiSecret) || (urlToken && urlToken !== apiSecret))
+  const headerKey = (req.headers['x-api-key'] as string) || '';
+  const urlToken = (req.query && (req.query as any).token) || '';
+  if ((headerKey || urlToken) && apiSecret) {
+    if ((headerKey && headerKey !== apiSecret) || (urlToken && urlToken !== apiSecret)) {
       return res.status(401).end('Unauthorized');
+    }
   }
 
   const client = new Client({ connectionString: process.env.DATABASE_URL });
