@@ -7,14 +7,16 @@ import { useState, useEffect } from 'react';
 import { UserSession, Employee, TaskLocation, AttendanceRecord } from './types';
 import {
   getEmployees,
-  saveEmployees,
+  saveSingleEmployee,
+  deleteSingleEmployee,
   getTasks,
-  saveTasks,
+  saveSingleTask,
+  deleteSingleTask,
   getAttendanceRecords,
   saveAttendanceRecords,
+  addSingleAttendanceRecord,
   getCurrentSession,
   setCurrentSession,
-  initializeStorage,
   getAdminConfig,
 } from './lib/storage';
 import { initFirestoreSync, DATA_UPDATED_EVENT } from './lib/firestoreSync';
@@ -34,7 +36,6 @@ import { AdminRekap } from './views/AdminRekap';
 export default function App() {
   // 1. Initialize data storage & Firestore real-time sync
   useEffect(() => {
-    initializeStorage();
     initFirestoreSync();
 
     const handleSyncUpdate = () => {
@@ -44,6 +45,8 @@ export default function App() {
     };
 
     window.addEventListener(DATA_UPDATED_EVENT, handleSyncUpdate);
+    handleSyncUpdate();
+
     return () => {
       window.removeEventListener(DATA_UPDATED_EVENT, handleSyncUpdate);
     };
@@ -104,17 +107,9 @@ export default function App() {
     }
   };
 
-  // Handlers for Employees
+  // Handlers for Employees (Direct Firestore realtime)
   const handleSaveEmployee = (emp: Employee) => {
-    const exists = employees.some((e) => e.id === emp.id);
-    let updated: Employee[];
-    if (exists) {
-      updated = employees.map((e) => (e.id === emp.id ? emp : e));
-    } else {
-      updated = [emp, ...employees];
-    }
-    setEmployees(updated);
-    saveEmployees(updated);
+    saveSingleEmployee(emp);
   };
 
   const handleDeleteEmployee = (id: string) => {
@@ -127,36 +122,21 @@ export default function App() {
       alert('Akun tidak dapat dihapus. Hubungi Developer.');
       return;
     }
-    const updated = employees.filter((e) => e.id !== id);
-    setEmployees(updated);
-    saveEmployees(updated);
+    deleteSingleEmployee(id);
   };
 
-  // Handlers for Tasks
+  // Handlers for Tasks (Direct Firestore realtime)
   const handleSaveTask = (task: TaskLocation) => {
-    const exists = tasks.some((t) => t.id === task.id);
-    let updated: TaskLocation[];
-    if (exists) {
-      updated = tasks.map((t) => (t.id === task.id ? task : t));
-    } else {
-      updated = [task, ...tasks];
-    }
-    setTasks(updated);
-    saveTasks(updated);
+    saveSingleTask(task);
   };
 
   const handleDeleteTask = (id: string) => {
-    const updated = tasks.filter((t) => t.id !== id);
-    setTasks(updated);
-    saveTasks(updated);
-    // Note: Records are preserved in `records` so they remain available in history and admin recaps
+    deleteSingleTask(id);
   };
 
-  // Attendance Handler
+  // Attendance Handler (Direct Firestore realtime)
   const handleAttendanceSuccess = (newRecord: AttendanceRecord) => {
-    const updated = [newRecord, ...records];
-    setRecords(updated);
-    saveAttendanceRecords(updated);
+    addSingleAttendanceRecord(newRecord);
   };
 
   // Current logged in Employee object if in employee mode

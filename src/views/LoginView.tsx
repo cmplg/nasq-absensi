@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { UserSession, UserRole } from '../types';
 import { getEmployees, getAdminConfig } from '../lib/storage';
-import { ShieldCheck, UserCheck, KeyRound, AlertCircle, ArrowRight } from 'lucide-react';
+import {
+  fetchEmployeesDirectFromFirestore,
+  fetchAdminConfigDirectFromFirestore,
+} from '../lib/firestoreSync';
+import { ShieldCheck, UserCheck, KeyRound, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 
 interface LoginViewProps {
   onLoginSuccess: (session: UserSession) => void;
@@ -12,70 +16,96 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    setIsLoggingIn(true);
 
-    const inputUser = username.trim().toLowerCase();
+    try {
+      const inputUser = username.trim().toLowerCase();
 
-    // Check if logging in as superuser with ultra password
-    if (inputUser === 'superuser' && password === 'ultra') {
-      onLoginSuccess({
-        id: 'emp-superuser',
-        name: 'Super User (Developer)',
-        username: 'superuser',
-        role: activeRole === 'admin' ? 'admin' : 'karyawan',
-        employeeId: 'emp-superuser',
-        isDeveloper: true,
-      });
-      return;
-    }
-
-    if (activeRole === 'admin') {
-      const adminConfig = getAdminConfig();
-      if (
-        inputUser === adminConfig.username.toLowerCase() &&
-        password === adminConfig.password
-      ) {
+      // Check if logging in as superuser with ultra password
+      if (inputUser === 'superuser' && password === 'ultra') {
         onLoginSuccess({
-          id: 'admin-1',
-          name: adminConfig.name,
-          username: adminConfig.username,
-          role: 'admin',
+          id: 'emp-superuser',
+          name: 'Super User (Developer)',
+          username: 'superuser',
+          role: activeRole === 'admin' ? 'admin' : 'karyawan',
+          employeeId: 'emp-superuser',
+          isDeveloper: true,
         });
         return;
+      }
+
+      if (activeRole === 'admin') {
+        let adminConfig = getAdminConfig();
+        if (
+          inputUser !== adminConfig.username.toLowerCase() ||
+          password !== adminConfig.password
+        ) {
+          adminConfig = await fetchAdminConfigDirectFromFirestore();
+        }
+
+        if (
+          inputUser === adminConfig.username.toLowerCase() &&
+          password === adminConfig.password
+        ) {
+          onLoginSuccess({
+            id: 'admin-1',
+            name: adminConfig.name,
+            username: adminConfig.username,
+            role: 'admin',
+          });
+          return;
+        } else {
+          setErrorMessage('Username atau password admin salah.');
+          return;
+        }
+      }
+
+      // Employee Login: check local first
+      let employees = getEmployees();
+      let emp = employees.find(
+        (u) =>
+          (u.username.toLowerCase() === inputUser ||
+            u.email.toLowerCase() === inputUser) &&
+          u.isActive
+      );
+
+      // If not found in local cache, fetch direct from Firestore cloud
+      if (!emp) {
+        employees = await fetchEmployeesDirectFromFirestore();
+        emp = employees.find(
+          (u) =>
+            (u.username.toLowerCase() === inputUser ||
+              u.email.toLowerCase() === inputUser) &&
+            u.isActive
+        );
+      }
+
+      if (emp) {
+        if (emp.password && emp.password !== password) {
+          setErrorMessage('Password yang Anda masukkan salah. Silakan coba lagi.');
+          return;
+        }
+        onLoginSuccess({
+          id: emp.id,
+          name: emp.name,
+          username: emp.username,
+          role: 'karyawan',
+          employeeId: emp.id,
+        });
       } else {
-        setErrorMessage('Username atau password admin salah.');
-        return;
+        setErrorMessage('Akun karyawan tidak ditemukan atau sedang tidak aktif.');
       }
-    }
-
-    // Employee Login
-    const employees = getEmployees();
-    const emp = employees.find(
-      (u) =>
-        (u.username.toLowerCase() === inputUser ||
-          u.email.toLowerCase() === inputUser) &&
-        u.isActive
-    );
-
-    if (emp) {
-      if (emp.password && emp.password !== password) {
-        setErrorMessage('Password yang Anda masukkan salah. Silakan coba lagi.');
-        return;
-      }
-      onLoginSuccess({
-        id: emp.id,
-        name: emp.name,
-        username: emp.username,
-        role: 'karyawan',
-        employeeId: emp.id,
-      });
-    } else {
-      setErrorMessage('Akun karyawan tidak ditemukan atau sedang tidak aktif.');
+    } catch (err) {
+      setErrorMessage('Gagal menghubungkan ke server online. Silakan periksa jaringan internet Anda.');
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -187,14 +217,26 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
 
             <button
               type="submit"
+              disabled={isLoggingIn}
               className={`w-full py-3.5 rounded-2xl font-extrabold text-sm shadow-md flex items-center justify-center space-x-2 transition ${
-                activeRole === 'admin'
+                isLoggingIn
+                  ? 'bg-slate-400 text-slate-100 cursor-not-allowed'
+                  : activeRole === 'admin'
                   ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20'
                   : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
               }`}
             >
-              <span>{activeRole === 'admin' ? 'Masuk Portal Admin' : 'Masuk Portal Presensi'}</span>
-              <ArrowRight className="w-4 h-4" />
+              {isLoggingIn ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  <span>Memeriksa Akun Online...</span>
+                </>
+              ) : (
+                <>
+                  <span>{activeRole === 'admin' ? 'Masuk Portal Admin' : 'Masuk Portal Presensi'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
         </div>

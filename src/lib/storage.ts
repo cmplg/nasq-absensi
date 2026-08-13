@@ -1,67 +1,33 @@
 import { Employee, TaskLocation, AttendanceRecord, UserSession } from '../types';
-
-export interface AdminConfig {
-  username: string;
-  password: string;
-  name: string;
-}
-
-const STORAGE_KEYS = {
-  EMPLOYEES: 'nasq_employees_v2',
-  TASKS: 'nasq_tasks_v2',
-  ATTENDANCE: 'nasq_attendance_v2',
-  SESSION: 'nasq_session_v2',
-  ADMIN_CONFIG: 'nasq_admin_config_v2',
-};
-
-const DEFAULT_ADMIN_CONFIG: AdminConfig = {
-  username: 'admin',
-  password: 'testadmin',
-  name: 'Administrator NASQ',
-};
-
-export const SUPERUSER_EMPLOYEE: Employee = {
-  id: 'emp-superuser',
-  name: 'Super User (Developer)',
-  email: 'developer@nasq.co.id',
-  username: 'superuser',
-  password: 'ultra',
-  position: 'Developer / Full Privilege',
-  department: 'System Developer',
-  shiftStart: '00:00',
-  shiftEnd: '23:59',
-  masterPhotos: ['data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="100%" height="100%" fill="%230f172a"/><circle cx="150" cy="110" r="55" fill="%231e293b"/><text x="50%" y="82%" font-family="sans-serif" font-weight="bold" font-size="28" fill="%2310b981" text-anchor="middle">SU</text></svg>'],
-  isActive: true,
-  createdAt: '2026-01-01T00:00:00.000Z',
-  isDeveloper: true,
-};
-
-const DEFAULT_EMPLOYEES: Employee[] = [SUPERUSER_EMPLOYEE];
-const DEFAULT_TASKS: TaskLocation[] = [];
-const DEFAULT_ATTENDANCE: AttendanceRecord[] = [];
-
-export function getAdminConfig(): AdminConfig {
-  const raw = localStorage.getItem(STORAGE_KEYS.ADMIN_CONFIG);
-  if (raw) {
-    try {
-      return JSON.parse(raw);
-    } catch {
-      // fallback
-    }
-  }
-  localStorage.setItem(STORAGE_KEYS.ADMIN_CONFIG, JSON.stringify(DEFAULT_ADMIN_CONFIG));
-  return DEFAULT_ADMIN_CONFIG;
-}
-
 import {
+  AdminConfig,
+  SUPERUSER_EMPLOYEE,
+  DEFAULT_ADMIN_CONFIG,
+  getLiveAdminConfig,
+  getLiveEmployees,
+  getLiveTasks,
+  getLiveAttendance,
   syncSaveAdminConfig,
+  syncSaveEmployee,
+  syncDeleteEmployee,
   syncSaveEmployees,
+  syncSaveTask,
+  syncDeleteTask,
   syncSaveTasks,
+  syncAddAttendanceRecord,
   syncSaveAttendanceRecords,
 } from './firestoreSync';
 
+export type { AdminConfig };
+export { SUPERUSER_EMPLOYEE, DEFAULT_ADMIN_CONFIG };
+
+const SESSION_KEY = 'nasq_session_v2';
+
+export function getAdminConfig(): AdminConfig {
+  return getLiveAdminConfig();
+}
+
 export function saveAdminConfig(config: AdminConfig) {
-  localStorage.setItem(STORAGE_KEYS.ADMIN_CONFIG, JSON.stringify(config));
   syncSaveAdminConfig(config);
 }
 
@@ -70,82 +36,57 @@ function getTodayString(): string {
 }
 
 export function initializeStorage() {
-  if (!localStorage.getItem(STORAGE_KEYS.ADMIN_CONFIG)) {
-    localStorage.setItem(STORAGE_KEYS.ADMIN_CONFIG, JSON.stringify(DEFAULT_ADMIN_CONFIG));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.EMPLOYEES)) {
-    localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(DEFAULT_EMPLOYEES));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.TASKS)) {
-    localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(DEFAULT_TASKS));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.ATTENDANCE)) {
-    localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(DEFAULT_ATTENDANCE));
-  }
+  // Session storage initialization if needed
 }
 
-// Data Getters & Setters
+// Data Getters & Setters - Strictly Database-driven
 export function getEmployees(): Employee[] {
-  initializeStorage();
-  const raw = localStorage.getItem(STORAGE_KEYS.EMPLOYEES);
-  let list: Employee[] = raw ? JSON.parse(raw) : DEFAULT_EMPLOYEES;
-
-  const hasSuperuser = list.some(
-    (e) => e.username.toLowerCase() === 'superuser' || e.id === 'emp-superuser' || e.isDeveloper
-  );
-
-  if (!hasSuperuser) {
-    list = [SUPERUSER_EMPLOYEE, ...list];
-  } else {
-    // Always enforce superuser password ultra and isActive true
-    list = list.map((e) => {
-      if (e.username.toLowerCase() === 'superuser' || e.id === 'emp-superuser' || e.isDeveloper) {
-        return {
-          ...e,
-          username: 'superuser',
-          password: 'ultra',
-          isActive: true,
-          isDeveloper: true,
-        };
-      }
-      return e;
-    });
-  }
-
-  localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(list));
-  return list;
+  return getLiveEmployees();
 }
 
 export function saveEmployees(employees: Employee[]) {
-  localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(employees));
   syncSaveEmployees(employees);
 }
 
+export function saveSingleEmployee(employee: Employee) {
+  syncSaveEmployee(employee);
+}
+
+export function deleteSingleEmployee(employeeId: string) {
+  syncDeleteEmployee(employeeId);
+}
+
 export function getTasks(): TaskLocation[] {
-  initializeStorage();
-  const raw = localStorage.getItem(STORAGE_KEYS.TASKS);
-  return raw ? JSON.parse(raw) : DEFAULT_TASKS;
+  return getLiveTasks();
 }
 
 export function saveTasks(tasks: TaskLocation[]) {
-  localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
   syncSaveTasks(tasks);
 }
 
+export function saveSingleTask(task: TaskLocation) {
+  syncSaveTask(task);
+}
+
+export function deleteSingleTask(taskId: string) {
+  syncDeleteTask(taskId);
+}
+
 export function getAttendanceRecords(): AttendanceRecord[] {
-  initializeStorage();
-  const raw = localStorage.getItem(STORAGE_KEYS.ATTENDANCE);
-  return raw ? JSON.parse(raw) : DEFAULT_ATTENDANCE;
+  return getLiveAttendance();
 }
 
 export function saveAttendanceRecords(records: AttendanceRecord[]) {
-  localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(records));
   syncSaveAttendanceRecords(records);
 }
 
-// Session Management
+export function addSingleAttendanceRecord(record: AttendanceRecord) {
+  syncAddAttendanceRecord(record);
+}
+
+// User Session Management (Browser Tab session state)
 export function getCurrentSession(): UserSession | null {
-  const raw = localStorage.getItem(STORAGE_KEYS.SESSION);
+  const raw = localStorage.getItem(SESSION_KEY);
   if (raw) {
     try {
       return JSON.parse(raw);
@@ -158,9 +99,9 @@ export function getCurrentSession(): UserSession | null {
 
 export function setCurrentSession(session: UserSession | null) {
   if (session) {
-    localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(session));
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   } else {
-    localStorage.removeItem(STORAGE_KEYS.SESSION);
+    localStorage.removeItem(SESSION_KEY);
   }
 }
 
@@ -179,7 +120,7 @@ export function exportAttendanceToCSV(records: AttendanceRecord[]) {
     'Nama Lokasi Penugasan',
     'Koordinat GPS',
   ];
-  
+
   const rows = records.map((r) => [
     `"${r.id}"`,
     `"${r.employeeName}"`,
@@ -188,7 +129,7 @@ export function exportAttendanceToCSV(records: AttendanceRecord[]) {
     `"${r.dateString}"`,
     `"${r.timeString}"`,
     `"${r.status === 'tepat_waktu' ? 'Tepat Waktu' : r.status === 'terlambat' ? 'Terlambat' : r.status === 'pulang_cepat' ? 'Pulang Lebih Awal' : 'Izin'}"`,
-    `"${(r.earlyReasonCategory ? (r.earlyReasonCategory + (r.earlyReasonNotes ? ' - ' + r.earlyReasonNotes : '')) : (r.notes || '-')).replace(/"/g, '""')}"`,
+    `"${(r.earlyReasonCategory ? r.earlyReasonCategory + (r.earlyReasonNotes ? ' - ' + r.earlyReasonNotes : '') : r.notes || '-').replace(/"/g, '""')}"`,
     `"${r.address.replace(/"/g, '""')}"`,
     `"${(r.taskTitle || 'Presensi Regular').replace(/"/g, '""')}"`,
     `"${r.latitude.toFixed(6)}, ${r.longitude.toFixed(6)}"`,
