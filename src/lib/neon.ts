@@ -8,7 +8,16 @@ export async function dbQuery(sql: string, params?: any[]) {
     headers,
     body: JSON.stringify({ sql, params }),
   });
-  if (!res.ok) throw new Error('DB query failed');
+  if (!res.ok) {
+    let detail = '';
+    try {
+      const body = await res.json();
+      detail = body?.error || JSON.stringify(body);
+    } catch (e) {
+      detail = await res.text();
+    }
+    throw new Error(`DB query failed: ${detail}`);
+  }
   return res.json();
 }
 
@@ -22,7 +31,16 @@ export async function notifyRealtime(channel: string, payload: any) {
     headers,
     body: JSON.stringify({ channel, payload }),
   });
-  if (!res.ok) throw new Error('Notify failed');
+  if (!res.ok) {
+    let detail = '';
+    try {
+      const body = await res.json();
+      detail = body?.error || JSON.stringify(body);
+    } catch (e) {
+      detail = await res.text();
+    }
+    throw new Error(`Notify failed: ${detail}`);
+  }
   return res.json();
 }
 
