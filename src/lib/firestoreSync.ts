@@ -1,34 +1,22 @@
 import { Employee, TaskLocation, AttendanceRecord } from '../types';
+import {
+  AdminConfig,
+  DEFAULT_ADMIN_CONFIG,
+  SUPERUSER_EMPLOYEE,
+  fetchAdminConfigFromNeon,
+  saveAdminConfigToNeon,
+  fetchEmployeesFromNeon,
+  saveEmployeeToNeon,
+  deleteEmployeeFromNeon,
+  fetchTasksFromNeon,
+  saveTaskToNeon,
+  deleteTaskFromNeon,
+  fetchAttendanceFromNeon,
+  saveAttendanceToNeon,
+} from './neonDb';
 
-export interface AdminConfig {
-  username: string;
-  password: string;
-  name: string;
-}
-
-export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
-  username: 'admin',
-  password: 'testadmin',
-  name: 'Administrator NASQ',
-};
-
-export const SUPERUSER_EMPLOYEE: Employee = {
-  id: 'emp-superuser',
-  name: 'Super User (Developer)',
-  email: 'developer@nasq.co.id',
-  username: 'superuser',
-  password: 'ultra',
-  position: 'Developer / Full Privilege',
-  department: 'System Developer',
-  shiftStart: '00:00',
-  shiftEnd: '23:59',
-  masterPhotos: [
-    'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"><rect width="100%" height="100%" fill="%230f172a"/><circle cx="150" cy="110" r="55" fill="%231e293b"/><text x="50%" y="82%" font-family="sans-serif" font-weight="bold" font-size="28" fill="%2310b981" text-anchor="middle">SU</text></svg>',
-  ],
-  isActive: true,
-  createdAt: '2026-01-01T00:00:00.000Z',
-  isDeveloper: true,
-};
+export type { AdminConfig };
+export { DEFAULT_ADMIN_CONFIG, SUPERUSER_EMPLOYEE };
 
 export const DATA_UPDATED_EVENT = 'nasq_data_updated';
 
@@ -48,11 +36,11 @@ export function getLiveAdminConfig(): AdminConfig {
 
 export function getLiveEmployees(): Employee[] {
   const hasSuperuser = memEmployees.some(
-    (e) => e.username.toLowerCase() === 'superuser' || e.id === 'emp-superuser' || e.isDeveloper
+    (e) => e.username?.toLowerCase() === 'superuser' || e.id === 'emp-superuser' || e.isDeveloper
   );
   let list = hasSuperuser ? memEmployees : [SUPERUSER_EMPLOYEE, ...memEmployees];
   return list.map((e) => {
-    if (e.username.toLowerCase() === 'superuser' || e.id === 'emp-superuser' || e.isDeveloper) {
+    if (e.username?.toLowerCase() === 'superuser' || e.id === 'emp-superuser' || e.isDeveloper) {
       return {
         ...e,
         username: 'superuser',
@@ -77,27 +65,24 @@ let isSyncInitialized = false;
 
 export async function refreshAllDataFromBackend() {
   try {
-    const [cfgRes, empRes, taskRes, attRes] = await Promise.all([
-      fetch('/api/admin-config'),
-      fetch('/api/employees'),
-      fetch('/api/tasks'),
-      fetch('/api/attendance'),
+    const [cfg, emps, tasks, att] = await Promise.all([
+      fetchAdminConfigFromNeon(),
+      fetchEmployeesFromNeon(),
+      fetchTasksFromNeon(),
+      fetchAttendanceFromNeon(),
     ]);
 
-    if (cfgRes.ok) {
-      memAdminConfig = await cfgRes.json();
+    if (cfg) {
+      memAdminConfig = cfg;
     }
-    if (empRes.ok) {
-      const emps: Employee[] = await empRes.json();
-      if (emps && emps.length > 0) {
-        memEmployees = emps;
-      }
+    if (emps && emps.length > 0) {
+      memEmployees = emps;
     }
-    if (taskRes.ok) {
-      memTasks = await taskRes.json();
+    if (tasks) {
+      memTasks = tasks;
     }
-    if (attRes.ok) {
-      memAttendance = await attRes.json();
+    if (att) {
+      memAttendance = att;
     }
 
     notifyDataChanged();
@@ -120,10 +105,10 @@ export function initFirestoreSync() {
     // ignore
   }
 
-  // Initial fetch
+  // Initial fetch from Neon
   refreshAllDataFromBackend();
 
-  // Poll backend every 4 seconds for instant cross-device updates
+  // Poll Neon database every 4 seconds for instant cross-device updates
   setInterval(() => {
     refreshAllDataFromBackend();
   }, 4000);
@@ -134,11 +119,8 @@ export async function syncSaveAdminConfig(config: AdminConfig) {
   memAdminConfig = config;
   notifyDataChanged();
   try {
-    await fetch('/api/admin-config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(config),
-    });
+    await saveAdminConfigToNeon(config);
+    await refreshAllDataFromBackend();
   } catch (err) {
     console.error('Gagal menyimpan Admin Config ke Neon Database:', err);
   }
@@ -154,12 +136,8 @@ export async function syncSaveEmployee(employee: Employee) {
   notifyDataChanged();
 
   try {
-    await fetch('/api/employees', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(employee),
-    });
-    refreshAllDataFromBackend();
+    await saveEmployeeToNeon(employee);
+    await refreshAllDataFromBackend();
   } catch (err) {
     console.error('Gagal menyimpan Karyawan ke Neon Database:', err);
   }
@@ -170,10 +148,8 @@ export async function syncDeleteEmployee(employeeId: string) {
   notifyDataChanged();
 
   try {
-    await fetch(`/api/employees/${employeeId}`, {
-      method: 'DELETE',
-    });
-    refreshAllDataFromBackend();
+    await deleteEmployeeFromNeon(employeeId);
+    await refreshAllDataFromBackend();
   } catch (err) {
     console.error('Gagal menghapus Karyawan dari Neon Database:', err);
   }
@@ -197,12 +173,8 @@ export async function syncSaveTask(task: TaskLocation) {
   notifyDataChanged();
 
   try {
-    await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(task),
-    });
-    refreshAllDataFromBackend();
+    await saveTaskToNeon(task);
+    await refreshAllDataFromBackend();
   } catch (err) {
     console.error('Gagal menyimpan Tugas ke Neon Database:', err);
   }
@@ -213,10 +185,8 @@ export async function syncDeleteTask(taskId: string) {
   notifyDataChanged();
 
   try {
-    await fetch(`/api/tasks/${taskId}`, {
-      method: 'DELETE',
-    });
-    refreshAllDataFromBackend();
+    await deleteTaskFromNeon(taskId);
+    await refreshAllDataFromBackend();
   } catch (err) {
     console.error('Gagal menghapus Tugas dari Neon Database:', err);
   }
@@ -235,12 +205,8 @@ export async function syncAddAttendanceRecord(record: AttendanceRecord) {
   notifyDataChanged();
 
   try {
-    await fetch('/api/attendance', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(record),
-    });
-    refreshAllDataFromBackend();
+    await saveAttendanceToNeon(record);
+    await refreshAllDataFromBackend();
   } catch (err) {
     console.error('Gagal menyimpan Presensi ke Neon Database:', err);
   }
@@ -263,5 +229,6 @@ export async function fetchAdminConfigDirectFromFirestore(): Promise<AdminConfig
   await refreshAllDataFromBackend();
   return getLiveAdminConfig();
 }
+
 
 
