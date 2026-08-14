@@ -21,6 +21,7 @@ export interface TaskLocation {
   title: string;
   description: string;
   address: string;
+  locationNotes?: string; // Custom location details / specific directions
   latitude: number;
   longitude: number;
   radiusMeters: number; // radius for attendance e.g. 100

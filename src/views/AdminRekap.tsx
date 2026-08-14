@@ -128,6 +128,14 @@ export function AdminRekap({
     records: filteredRecords,
   };
 
+  const isFilterActive =
+    selectedEmployeeId !== 'semua' ||
+    selectedTaskId !== 'semua' ||
+    selectedStatus !== 'semua' ||
+    Boolean(startDate) ||
+    Boolean(endDate) ||
+    Boolean(searchTerm.trim());
+
   const handleExportCSV = () => {
     exportAttendanceToCSV(filteredRecords);
   };
@@ -137,52 +145,54 @@ export function AdminRekap({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-3 pb-6 space-y-4 sm:space-y-5">
       {/* Top Header Banner */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 bg-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-2xs">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase rounded-full border border-emerald-200">
+            <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-800 text-[10px] font-black uppercase rounded-lg border border-emerald-200">
               Laporan Presensi Karyawan
             </span>
           </div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-1">
+          <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight mt-1">
             Rekapitulasi Jam Kerja, Absensi &amp; Lokasi
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 font-medium">
+          <p className="text-xs sm:text-[13px] text-slate-500 mt-0.5 font-medium leading-relaxed">
             Sistem rekapitulasi lengkap jumlah hari hadir, akumulasi jam kerja, verifikasi foto watermarked, dan pengajuan izin.
           </p>
         </div>
 
-        {/* Action Export Options: WhatsApp, PDF, CSV (Icons Only) */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => setShowWAShareModal(true)}
-            title="Bagikan Teks Rekap ke WhatsApp"
-            className="p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-md shadow-emerald-600/20 transition flex items-center justify-center shrink-0"
-          >
-            <Share2 className="w-4 h-4 text-emerald-100" />
-          </button>
+        {/* Action Export Options: WhatsApp, PDF, CSV (Hanya muncul jika filter aktif/dipilih) */}
+        {isFilterActive && (
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowWAShareModal(true)}
+              title="Bagikan Teks Rekap ke WhatsApp"
+              className="p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md shadow-emerald-600/20 transition flex items-center justify-center shrink-0"
+            >
+              <Share2 className="w-4 h-4 text-emerald-100" />
+            </button>
 
-          <button
-            type="button"
-            onClick={handleExportPDF}
-            title="Cetak Laporan PDF"
-            className="p-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl shadow-md transition flex items-center justify-center shrink-0"
-          >
-            <Printer className="w-4 h-4 text-emerald-400" />
-          </button>
+            <button
+              type="button"
+              onClick={handleExportPDF}
+              title="Cetak Laporan PDF"
+              className="p-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-md transition flex items-center justify-center shrink-0"
+            >
+              <Printer className="w-4 h-4 text-emerald-400" />
+            </button>
 
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            title="Export Data CSV"
-            className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-2xl border border-slate-300 transition flex items-center justify-center shrink-0"
-          >
-            <Download className="w-4 h-4 text-slate-600" />
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              title="Export Data CSV"
+              className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl border border-slate-300 transition flex items-center justify-center shrink-0"
+            >
+              <Download className="w-4 h-4 text-slate-600" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Selected Employee Highlights Banner (If specific employee selected) */}
@@ -222,75 +232,75 @@ export function AdminRekap({
         </div>
       )}
 
-      {/* Summary Bento Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 bg-slate-100 text-slate-800 rounded-2xl font-bold flex items-center justify-center shrink-0">
-            <Calendar className="w-5 h-5 text-slate-700" />
+      {/* Summary Bento Cards Grid - Compact */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
+        <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center space-x-2.5">
+          <div className="w-8 h-8 bg-slate-100 text-slate-800 rounded-xl font-bold flex items-center justify-center shrink-0">
+            <Calendar className="w-4 h-4 text-slate-700" />
           </div>
-          <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Jumlah Hari</p>
-            <p className="text-xl font-black text-slate-900">{uniqueDays} Hari</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 bg-emerald-100 text-emerald-800 rounded-2xl font-bold flex items-center justify-center shrink-0">
-            <Clock className="w-5 h-5 text-emerald-700" />
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Jam Kerja</p>
-            <p className="text-xl font-black text-emerald-600">{totalHoursWorked}j {remainingMinsWorked}m</p>
+          <div className="min-w-0">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">Jumlah Hari</p>
+            <p className="text-base sm:text-lg font-black text-slate-900">{uniqueDays} Hari</p>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 bg-blue-100 text-blue-800 rounded-2xl font-bold flex items-center justify-center shrink-0">
-            <UserCheck className="w-5 h-5 text-blue-700" />
+        <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center space-x-2.5">
+          <div className="w-8 h-8 bg-emerald-100 text-emerald-800 rounded-xl font-bold flex items-center justify-center shrink-0">
+            <Clock className="w-4 h-4 text-emerald-700" />
           </div>
-          <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Masuk Tepat</p>
-            <p className="text-xl font-black text-blue-600">{totalTepat} Entri</p>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 bg-amber-100 text-amber-800 rounded-2xl font-bold flex items-center justify-center shrink-0">
-            <AlertTriangle className="w-5 h-5 text-amber-700" />
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Terlambat</p>
-            <p className="text-xl font-black text-amber-600">{totalTelat} Entri</p>
+          <div className="min-w-0">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">Total Jam Kerja</p>
+            <p className="text-base sm:text-lg font-black text-emerald-600">{totalHoursWorked}j {remainingMinsWorked}m</p>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 bg-rose-100 text-rose-800 rounded-2xl font-bold flex items-center justify-center shrink-0">
-            <Briefcase className="w-5 h-5 text-rose-700" />
+        <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center space-x-2.5">
+          <div className="w-8 h-8 bg-blue-100 text-blue-800 rounded-xl font-bold flex items-center justify-center shrink-0">
+            <UserCheck className="w-4 h-4 text-blue-700" />
           </div>
-          <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pulang Cepat</p>
-            <p className="text-xl font-black text-rose-600">{totalPulangCepat} Entri</p>
+          <div className="min-w-0">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">Masuk Tepat</p>
+            <p className="text-base sm:text-lg font-black text-blue-600">{totalTepat} Entri</p>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs flex items-center space-x-3">
-          <div className="w-10 h-10 bg-indigo-100 text-indigo-800 rounded-2xl font-bold flex items-center justify-center shrink-0">
-            <FileText className="w-5 h-5 text-indigo-700" />
+        <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center space-x-2.5">
+          <div className="w-8 h-8 bg-amber-100 text-amber-800 rounded-xl font-bold flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-4 h-4 text-amber-700" />
           </div>
-          <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Izin / Tidak Hadir</p>
-            <p className="text-xl font-black text-indigo-600">{totalIzin} Entri</p>
+          <div className="min-w-0">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">Terlambat</p>
+            <p className="text-base sm:text-lg font-black text-amber-600">{totalTelat} Entri</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center space-x-2.5">
+          <div className="w-8 h-8 bg-rose-100 text-rose-800 rounded-xl font-bold flex items-center justify-center shrink-0">
+            <Briefcase className="w-4 h-4 text-rose-700" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">Pulang Cepat</p>
+            <p className="text-base sm:text-lg font-black text-rose-600">{totalPulangCepat} Entri</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center space-x-2.5">
+          <div className="w-8 h-8 bg-indigo-100 text-indigo-800 rounded-xl font-bold flex items-center justify-center shrink-0">
+            <FileText className="w-4 h-4 text-indigo-700" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">Izin / Off</p>
+            <p className="text-base sm:text-lg font-black text-indigo-600">{totalIzin} Entri</p>
           </div>
         </div>
       </div>
 
-      {/* Advanced Filters Panel */}
-      <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-sm space-y-3 text-xs">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+      {/* Advanced Filters Panel - Compact & Clean without Emojis */}
+      <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5 text-xs">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
           <div className="flex items-center space-x-2 font-bold text-slate-800">
-            <Filter className="w-4 h-4 text-emerald-600" />
-            <span>Filter Kriteria Laporan Absensi:</span>
+            <Filter className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="text-xs">Filter Kriteria Laporan Absensi:</span>
           </div>
 
           {(selectedEmployeeId !== 'semua' || selectedTaskId !== 'semua' || selectedStatus !== 'semua' || startDate || endDate || searchTerm) && (
@@ -310,7 +320,7 @@ export function AdminRekap({
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
           {/* Search Input */}
           <div className="relative">
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
@@ -319,7 +329,7 @@ export function AdminRekap({
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari nama / alamat..."
-              className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-xs"
             />
           </div>
 
@@ -327,12 +337,12 @@ export function AdminRekap({
           <select
             value={selectedEmployeeId}
             onChange={(e) => setSelectedEmployeeId(e.target.value)}
-            className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full py-1.5 px-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
           >
-            <option value="semua">👥 Semua Karyawan</option>
+            <option value="semua">Semua Karyawan</option>
             {employees.map((e) => (
               <option key={e.id} value={e.id}>
-                👤 {e.name} ({e.position})
+                {e.name} ({e.position})
               </option>
             ))}
           </select>
@@ -341,12 +351,12 @@ export function AdminRekap({
           <select
             value={selectedTaskId}
             onChange={(e) => setSelectedTaskId(e.target.value)}
-            className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full py-1.5 px-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
           >
-            <option value="semua">📍 Semua Penugasan</option>
+            <option value="semua">Semua Penugasan</option>
             {tasks.map((t) => (
               <option key={t.id} value={t.id}>
-                📌 {t.title}
+                {t.title}
               </option>
             ))}
           </select>
@@ -355,13 +365,13 @@ export function AdminRekap({
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full py-1.5 px-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
           >
-            <option value="semua">⚡ Semua Status Waktu</option>
-            <option value="tepat_waktu">✅ Tepat Waktu</option>
-            <option value="terlambat">⚠️ Terlambat Masuk</option>
-            <option value="pulang_cepat">⏳ Pulang Lebih Awal</option>
-            <option value="izin">📄 Izin / Off</option>
+            <option value="semua">Semua Status Waktu</option>
+            <option value="tepat_waktu">Tepat Waktu</option>
+            <option value="terlambat">Terlambat Masuk</option>
+            <option value="pulang_cepat">Pulang Lebih Awal</option>
+            <option value="izin">Izin / Off</option>
           </select>
 
           {/* Date Range Filters */}
@@ -370,7 +380,7 @@ export function AdminRekap({
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-1/2 py-2 px-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium text-[11px]"
+              className="w-1/2 py-1.5 px-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium text-[11px]"
               title="Tanggal Mulai"
             />
             <span className="text-slate-400 font-bold">-</span>
@@ -378,101 +388,101 @@ export function AdminRekap({
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-1/2 py-2 px-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium text-[11px]"
+              className="w-1/2 py-1.5 px-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium text-[11px]"
               title="Tanggal Selesai"
             />
           </div>
         </div>
       </div>
 
-      {/* Attendance Records Data Table */}
+      {/* Attendance Records Data Table - Compact Rows */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
-                <th className="p-4">Karyawan &amp; Wajah</th>
-                <th className="p-4">Tipe &amp; Waktu</th>
-                <th className="p-4">Status &amp; Alasan</th>
-                <th className="p-4">Lokasi Alamat GPS</th>
-                <th className="p-4">Lokasi Penugasan</th>
-                <th className="p-4 text-right">Aksi</th>
+              <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
+                <th className="py-3 px-3.5">Karyawan &amp; Wajah</th>
+                <th className="py-3 px-3.5">Tipe &amp; Waktu</th>
+                <th className="py-3 px-3.5">Status &amp; Alasan</th>
+                <th className="py-3 px-3.5">Lokasi Alamat GPS</th>
+                <th className="py-3 px-3.5">Lokasi Penugasan</th>
+                <th className="py-3 px-3.5 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
               {filteredRecords.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-400 font-medium">
+                  <td colSpan={6} className="py-6 px-4 text-center text-slate-400 font-medium">
                     Tidak ada riwayat presensi yang sesuai dengan kriteria pencarian filter.
                   </td>
                 </tr>
               ) : (
                 filteredRecords.map((r) => (
                   <tr key={r.id} className="hover:bg-slate-50/80 transition">
-                    <td className="p-4">
-                      <div className="flex items-center space-x-3">
+                    <td className="py-2.5 px-3.5">
+                      <div className="flex items-center space-x-2.5">
                         {r.verifiedPhoto && r.verifiedPhoto.trim() !== '' ? (
                           <img
                             src={r.verifiedPhoto}
                             alt="Verifikasi Wajah"
-                            className="w-11 h-11 rounded-xl object-cover border border-slate-300 shadow-xs bg-slate-100 shrink-0"
+                            className="w-9 h-9 rounded-lg object-cover border border-slate-300 shadow-2xs bg-slate-100 shrink-0"
                           />
                         ) : (
-                          <div className="w-11 h-11 rounded-xl bg-slate-100 border border-slate-300 shrink-0 flex items-center justify-center text-slate-400 font-bold text-[10px]">
+                          <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-300 shrink-0 flex items-center justify-center text-slate-400 font-bold text-[9px]">
                             No Foto
                           </div>
                         )}
-                        <div>
-                          <p className="font-bold text-slate-900 text-sm">{r.employeeName}</p>
-                          <p className="text-[11px] text-slate-400">{r.employeePosition}</p>
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-900 text-xs sm:text-sm truncate">{r.employeeName}</p>
+                          <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">{r.employeePosition}</p>
                         </div>
                       </div>
                     </td>
 
-                    <td className="p-4">
-                      <p className="font-bold text-slate-900 capitalize">
+                    <td className="py-2.5 px-3.5">
+                      <p className="font-bold text-slate-900 capitalize text-xs">
                         {r.type === 'masuk' ? 'Absen Datang' : r.type === 'pulang' ? 'Absen Pulang' : 'Izin'}
                       </p>
-                      <p className="text-slate-500 font-mono text-[11px]">
+                      <p className="text-slate-500 font-mono text-[10px] sm:text-[11px]">
                         {r.dateString} • <span className="font-bold text-slate-800">{r.timeString} WIB</span>
                       </p>
                     </td>
 
-                    <td className="p-4 space-y-1">
+                    <td className="py-2.5 px-3.5 space-y-0.5">
                       {r.status === 'tepat_waktu' && (
-                        <span className="inline-block px-2.5 py-1 bg-emerald-50 text-emerald-700 font-extrabold rounded-full border border-emerald-200 text-[11px]">
+                        <span className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-700 font-extrabold rounded-md border border-emerald-200 text-[10px]">
                           Tepat Waktu
                         </span>
                       )}
                       {r.status === 'terlambat' && (
-                        <span className="inline-block px-2.5 py-1 bg-rose-50 text-rose-700 font-extrabold rounded-full border border-rose-200 text-[11px]" title="Absen dilakukan setelah jam shift dimulai">
+                        <span className="inline-block px-2 py-0.5 bg-rose-50 text-rose-700 font-extrabold rounded-md border border-rose-200 text-[10px]" title="Absen dilakukan setelah jam shift dimulai">
                           Terlambat Masuk
                         </span>
                       )}
                       {(r.status === 'pulang_cepat' || r.earlyReasonCategory) && (
                         <div>
-                          <span className="inline-block px-2.5 py-1 bg-amber-50 text-amber-800 font-extrabold rounded-full border border-amber-200 text-[11px]" title="Absen pulang dilakukan sebelum jam kerja selesai">
+                          <span className="inline-block px-2 py-0.5 bg-amber-50 text-amber-800 font-extrabold rounded-md border border-amber-200 text-[10px]" title="Absen pulang dilakukan sebelum jam kerja selesai">
                             Kurang Jam Kerja
                           </span>
-                          <p className="text-[11px] font-semibold text-amber-900 mt-1">
+                          <p className="text-[10px] font-semibold text-amber-900 mt-0.5">
                             Alasan: <span className="font-extrabold">{r.earlyReasonCategory}</span>
                             {r.earlyReasonNotes && ` (${r.earlyReasonNotes})`}
                           </p>
                         </div>
                       )}
                       {r.type === 'izin' && (
-                        <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-700 font-extrabold rounded-full border border-blue-200 text-[11px]">
+                        <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 font-extrabold rounded-md border border-blue-200 text-[10px]">
                           Izin Resmi
                         </span>
                       )}
                     </td>
 
-                    <td className="p-4 max-w-xs">
-                      <p className="line-clamp-2 text-slate-800">{r.address}</p>
+                    <td className="py-2.5 px-3.5 max-w-xs">
+                      <p className="line-clamp-2 text-slate-800 text-[11px] leading-snug">{r.address}</p>
                     </td>
 
-                    <td className="p-4">
-                      <p className="font-semibold text-slate-900">{r.taskTitle || 'Presensi Regular'}</p>
+                    <td className="py-2.5 px-3.5">
+                      <p className="font-semibold text-slate-900 text-xs">{r.taskTitle || 'Presensi Regular'}</p>
                       {r.distanceFromTaskMeters !== undefined && (
                         <p className="text-emerald-700 text-[10px] font-bold">
                           Jarak: ±{r.distanceFromTaskMeters}m
@@ -480,12 +490,12 @@ export function AdminRekap({
                       )}
                     </td>
 
-                    <td className="p-4 text-right">
+                    <td className="py-2.5 px-3.5 text-right">
                       <button
                         onClick={() => setSelectedRecord(r)}
-                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl transition inline-flex items-center space-x-1"
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-lg transition inline-flex items-center space-x-1 text-xs"
                       >
-                        <Eye className="w-3.5 h-3.5" />
+                        <Eye className="w-3 h-3" />
                         <span>Detail</span>
                       </button>
                     </td>

@@ -26,8 +26,20 @@ function notifyDataChanged() {
   window.dispatchEvent(new CustomEvent(DATA_UPDATED_EVENT));
 }
 
+const ADMIN_CONFIG_CACHE_KEY = 'nasq_admin_config_v2';
+
+function loadCachedAdminConfig(): AdminConfig {
+  try {
+    const raw = localStorage.getItem(ADMIN_CONFIG_CACHE_KEY);
+    if (raw) {
+      return { ...DEFAULT_ADMIN_CONFIG, ...JSON.parse(raw) };
+    }
+  } catch {}
+  return DEFAULT_ADMIN_CONFIG;
+}
+
 // In-Memory Realtime Cache
-let memAdminConfig: AdminConfig = DEFAULT_ADMIN_CONFIG;
+let memAdminConfig: AdminConfig = loadCachedAdminConfig();
 let memEmployees: Employee[] = [SUPERUSER_EMPLOYEE];
 let memTasks: TaskLocation[] = [];
 let memAttendance: AttendanceRecord[] = [];
@@ -109,6 +121,9 @@ export function initFirestoreSync() {
 // Server Actions
 export async function syncSaveAdminConfig(config: AdminConfig) {
   memAdminConfig = config;
+  try {
+    localStorage.setItem(ADMIN_CONFIG_CACHE_KEY, JSON.stringify(config));
+  } catch {}
   notifyDataChanged();
   try {
     if (isSupabaseConfigured()) {

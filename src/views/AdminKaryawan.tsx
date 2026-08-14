@@ -270,7 +270,11 @@ export function AdminKaryawan({
                       <td className="p-4">
                         <p className="font-bold text-slate-900">@{emp.username}</p>
                         <p className="text-slate-500 text-[11px]">{emp.email}</p>
-                        <p className="text-[10px] text-slate-400 font-mono mt-0.5">Sandi: {emp.password || 'password123'}</p>
+                        {isSuper ? (
+                          <p className="text-[10px] text-amber-700 font-bold mt-0.5">🔒 Terlindungi (Superuser)</p>
+                        ) : (
+                          <p className="text-[10px] text-slate-400 font-mono mt-0.5">Sandi: ••••••••</p>
+                        )}
                       </td>
 
                       <td className="p-4">

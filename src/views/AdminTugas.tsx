@@ -22,6 +22,7 @@ import {
   Image as ImageIcon,
   Upload,
   Camera,
+  FileText,
 } from 'lucide-react';
 
 // Helper to scale down images for lightweight resolution (~480x480 px, ~12KB)
@@ -153,6 +154,7 @@ export function AdminTugas({
     title: string;
     description: string;
     address: string;
+    locationNotes?: string;
     latitude: number;
     longitude: number;
     radiusMeters: number;
@@ -167,6 +169,7 @@ export function AdminTugas({
     title: '',
     description: '',
     address: '',
+    locationNotes: '',
     latitude: -6.2088,
     longitude: 106.8456,
     radiusMeters: 150,
@@ -236,6 +239,7 @@ export function AdminTugas({
       title: '',
       description: '',
       address: 'Mendeteksi posisi lokasi...',
+      locationNotes: '',
       latitude: initialLat,
       longitude: initialLng,
       radiusMeters: 150,
@@ -268,6 +272,7 @@ export function AdminTugas({
       title: task.title,
       description: task.description,
       address: task.address,
+      locationNotes: task.locationNotes || '',
       latitude: task.latitude,
       longitude: task.longitude,
       radiusMeters: task.radiusMeters,
@@ -304,6 +309,7 @@ export function AdminTugas({
       title: formData.title,
       description: formData.description,
       address: formData.address,
+      locationNotes: formData.locationNotes?.trim() || undefined,
       latitude: Number(formData.latitude),
       longitude: Number(formData.longitude),
       radiusMeters: Number(formData.radiusMeters),
@@ -410,6 +416,15 @@ export function AdminTugas({
                         <MapPin className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                         <span>{task.address}</span>
                       </p>
+                      {task.locationNotes && task.locationNotes.trim() !== '' && (
+                        <div className="p-2 bg-amber-50/80 rounded-lg border border-amber-200/80 text-[11px] text-amber-900 flex items-start space-x-1.5">
+                          <FileText className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="font-bold text-amber-950">Catatan Lokasi: </span>
+                            <span>{task.locationNotes}</span>
+                          </div>
+                        </div>
+                      )}
                       <p className="flex items-center space-x-2 text-slate-500 text-[11px]">
                         <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span>Periode: {task.startDate} s.d {task.endDate}</span>
@@ -617,6 +632,21 @@ export function AdminTugas({
                 )}
               </div>
 
+              {/* Form Catatan Lokasi (Detail / Patokan Khusus) */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+                  <span>Catatan Lokasi (Detail / Patokan Khusus)</span>
+                  <span className="text-[10px] text-slate-400 font-semibold">Opsional</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={formData.locationNotes}
+                  onChange={(e) => setFormData({ ...formData, locationNotes: e.target.value })}
+                  placeholder="Contoh: Masuk melalui lobby barat, gedung samping minimarket, lantai 3 ruang server..."
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                />
+              </div>
+
               {/* Interactive Location Map Picker */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
@@ -625,12 +655,12 @@ export function AdminTugas({
                     type="button"
                     onClick={handleUseCurrentLocation}
                     disabled={isGettingCurrentLoc}
-                    className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[11px] font-extrabold flex items-center space-x-1.5 transition border border-emerald-300 shrink-0"
+                    className="px-2.5 py-1 bg-[#93eea6] hover:bg-[#7fe495] text-emerald-950 rounded-lg text-[11px] font-extrabold flex items-center space-x-1.5 transition border border-emerald-400 shrink-0 shadow-2xs"
                   >
                     {isGettingCurrentLoc ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-800" />
                     ) : (
-                      <LocateFixed className="w-3.5 h-3.5 text-emerald-600" />
+                      <LocateFixed className="w-3.5 h-3.5 text-emerald-800" />
                     )}
                     <span>Tambahkan Lokasi Saat Ini</span>
                   </button>
@@ -822,7 +852,7 @@ export function AdminTugas({
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="w-1/3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl"
+                  className="w-1/3 py-2.5 bg-[#808081] hover:bg-[#6c6c6d] text-white font-bold rounded-xl shadow-xs transition"
                 >
                   Batal
                 </button>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { UserSession } from '../types';
 import { getAdminConfig } from '../lib/storage';
+import { CompanySettingsModal } from './CompanySettingsModal';
 import {
   LogOut,
   UserCheck,
@@ -14,6 +15,8 @@ import {
   Sparkles,
   Briefcase,
   FileText,
+  Settings,
+  Building2,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -21,6 +24,7 @@ interface NavbarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onLogout: () => void;
+  onPreviewSplashScreen?: () => void;
 }
 
 export function Navbar({
@@ -28,8 +32,10 @@ export function Navbar({
   activeTab,
   setActiveTab,
   onLogout,
+  onPreviewSplashScreen,
 }: NavbarProps) {
   const [profileBottomSheetOpen, setProfileBottomSheetOpen] = useState(false);
+  const [companySettingsOpen, setCompanySettingsOpen] = useState(false);
 
   const isAdmin = currentSession?.role === 'admin';
 
@@ -43,7 +49,7 @@ export function Navbar({
   const adminNavItems = [
     { id: 'admin-overview', label: 'Overview', icon: Layers },
     { id: 'admin-karyawan', label: 'Karyawan', icon: Users },
-    { id: 'admin-tugas', label: 'Tugas GPS', icon: MapPin },
+    { id: 'admin-tugas', label: 'Jobs', icon: MapPin },
     { id: 'admin-rekap', label: 'Rekap', icon: FileSpreadsheet },
   ];
 
@@ -64,7 +70,7 @@ export function Navbar({
       case 'admin-karyawan':
         return 'Manajemen Karyawan';
       case 'admin-tugas':
-        return 'Kelola Lokasi Tugas';
+        return 'Jobs & Titik Lokasi GPS';
       case 'admin-rekap':
         return 'Rekap Laporan Absensi';
       default:
@@ -78,27 +84,16 @@ export function Navbar({
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-xs border-b border-slate-200/80">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            {/* App Icon (Custom ImageKit Logo or Default Emblem) */}
-            {getAdminConfig().companyLogoUrl ? (
-              <img
-                src={getAdminConfig().companyLogoUrl}
-                alt="Logo"
-                onClick={() => setActiveTab(isAdmin ? 'admin-overview' : 'dashboard')}
-                className="w-10 h-10 object-contain rounded-2xl p-1 bg-white border border-slate-200 shadow-md cursor-pointer active:scale-95 transition-transform shrink-0"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
-            ) : (
-              <div
-                onClick={() => setActiveTab(isAdmin ? 'admin-overview' : 'dashboard')}
-                className={`w-10 h-10 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-md cursor-pointer active:scale-95 transition-transform shrink-0 ${
-                  isAdmin ? 'bg-indigo-600 shadow-indigo-600/20' : 'bg-emerald-600 shadow-emerald-600/20'
-                }`}
-              >
-                N
-              </div>
-            )}
+            {/* App Icon (NASQ ImageKit Logo) */}
+            <img
+              src={getAdminConfig().companyLogoUrl || 'https://ik.imagekit.io/5iflbbg7x/NASQ_ICON.png'}
+              alt="NASQ Logo"
+              onClick={() => setActiveTab(isAdmin ? 'admin-overview' : 'dashboard')}
+              className="w-[38px] h-[38px] object-contain rounded-2xl p-1 bg-white border border-slate-200 shadow-md cursor-pointer active:scale-95 transition-transform shrink-0"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://ik.imagekit.io/5iflbbg7x/NASQ_ICON.png';
+              }}
+            />
             <div>
               <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
                 {getActiveTabTitle()}
@@ -239,8 +234,28 @@ export function Navbar({
               </div>
             </div>
 
-            {/* Logout Action */}
-            <div className="pt-2 border-t border-slate-100">
+            {/* Management & Settings Action */}
+            <div className="pt-2 border-t border-slate-100 space-y-2">
+              <button
+                onClick={() => {
+                  setProfileBottomSheetOpen(false);
+                  setCompanySettingsOpen(true);
+                }}
+                className="w-full py-3.5 px-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200/80 rounded-2xl font-bold text-xs flex items-center justify-between transition shadow-2xs group text-left"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-xs">
+                    <Settings className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-xs text-slate-900 block">Pengaturan Perusahaan</span>
+                    <span className="text-[11px] text-slate-500 font-medium">Logo, nama perusahaan, durasi sesi &amp; akun</span>
+                  </div>
+                </div>
+                <span className="text-indigo-600 font-black text-sm group-hover:translate-x-0.5 transition-transform">›</span>
+              </button>
+
+              {/* Logout Action */}
               <button
                 onClick={() => {
                   setProfileBottomSheetOpen(false);
@@ -255,6 +270,13 @@ export function Navbar({
           </div>
         </div>
       )}
+
+      {/* Company & Session Settings Modal */}
+      <CompanySettingsModal
+        isOpen={companySettingsOpen}
+        onClose={() => setCompanySettingsOpen(false)}
+        onPreviewSplashScreen={onPreviewSplashScreen}
+      />
     </>
   );
 }

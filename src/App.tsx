@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { UserSession, UserRole, Employee, TaskLocation, AttendanceRecord } from './types';
 import {
   getEmployees,
@@ -18,6 +18,9 @@ import {
   getCurrentSession,
   setCurrentSession,
   getAdminConfig,
+  recordUserActivity,
+  isSessionExpiredDueToInactivity,
+  getInactivityTimeoutMinutes,
 } from './lib/storage';
 import { initFirestoreSync, DATA_UPDATED_EVENT } from './lib/firestoreSync';
 
@@ -67,11 +70,57 @@ export default function App() {
   // Camera modal state
   const [absenModalType, setAbsenModalType] = useState<'masuk' | 'pulang' | null>(null);
 
-  // Splash Screen & Login State
-  const [showSplash, setShowSplash] = useState(true);
+  // Splash Screen & Login State: if user is already logged in, do not show splash on refresh
+  const [showSplash, setShowSplash] = useState(() => !getCurrentSession());
+  const [inactivityNotice, setInactivityNotice] = useState<string | null>(null);
+  const lastRecordedActivityRef = useRef<number>(Date.now());
+
+  // Inactivity timeout tracker: Automatically logs out and requests re-login when idle for 15 minutes
+  useEffect(() => {
+    if (!session || showSplash) return;
+
+    // Reset timestamp upon active session
+    recordUserActivity();
+    lastRecordedActivityRef.current = Date.now();
+
+    const handleUserActivity = () => {
+      const now = Date.now();
+      // Throttle writing to localStorage to once every 5 seconds
+      if (now - lastRecordedActivityRef.current > 5000) {
+        recordUserActivity();
+        lastRecordedActivityRef.current = now;
+      }
+    };
+
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+    events.forEach((evt) => {
+      window.addEventListener(evt, handleUserActivity, { passive: true });
+    });
+
+    // Check inactivity periodically every 5 seconds
+    const interval = setInterval(() => {
+      if (isSessionExpiredDueToInactivity()) {
+        const timeoutMins = getInactivityTimeoutMinutes();
+        setCurrentSession(null);
+        setSession(null);
+        setShowSplash(true);
+        setInactivityNotice(
+          `Sesi Anda telah berakhir karena tidak ada aktivitas selama ${timeoutMins} menit. Silakan login kembali.`
+        );
+      }
+    }, 5000);
+
+    return () => {
+      events.forEach((evt) => {
+        window.removeEventListener(evt, handleUserActivity);
+      });
+      clearInterval(interval);
+    };
+  }, [session, showSplash]);
 
   // Sync tab with role on session change
   const handleLoginSuccess = (newSession: UserSession) => {
+    setInactivityNotice(null);
     setCurrentSession(newSession);
     setSession(newSession);
     setShowSplash(false);
@@ -83,6 +132,7 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    setInactivityNotice(null);
     setCurrentSession(null);
     setSession(null);
     setShowSplash(true);
@@ -183,6 +233,8 @@ export default function App() {
         onLoginSuccess={handleLoginSuccess}
         logoUrl={config.companyLogoUrl}
         companyName={config.companyName}
+        inactivityNotice={inactivityNotice}
+        onClearInactivityNotice={() => setInactivityNotice(null)}
       />
     );
   }
@@ -195,6 +247,7 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
+        onPreviewSplashScreen={() => setShowSplash(true)}
       />
 
       {/* Main View Area */}

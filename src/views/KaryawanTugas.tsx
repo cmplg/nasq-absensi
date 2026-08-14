@@ -13,6 +13,7 @@ import {
   Navigation,
   Search,
   Building2,
+  FileText,
 } from 'lucide-react';
 
 interface KaryawanTugasProps {
@@ -192,6 +193,16 @@ export function KaryawanTugas({ assignedTasks }: KaryawanTugasProps) {
                     <MapPin className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                     <span>{task.address}</span>
                   </div>
+
+                  {task.locationNotes && task.locationNotes.trim() !== '' && (
+                    <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900 flex items-start space-x-2">
+                      <FileText className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-extrabold text-amber-950 text-xs">Catatan / Patokan Khusus Lokasi:</p>
+                        <p className="font-medium text-amber-900 mt-0.5 leading-relaxed">{task.locationNotes}</p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="h-52 w-full rounded-2xl overflow-hidden border border-slate-200 shadow-2xs">
                     <MapView

@@ -84,10 +84,45 @@ export function addSingleAttendanceRecord(record: AttendanceRecord) {
   syncAddAttendanceRecord(record);
 }
 
+// Inactivity Configuration (Configurable from Company Settings)
+export function getInactivityTimeoutMinutes(): number {
+  const cfg = getAdminConfig();
+  const val = cfg.inactivityTimeoutMinutes;
+  return typeof val === 'number' && val > 0 ? val : 15;
+}
+
+export function getInactivityTimeoutMs(): number {
+  return getInactivityTimeoutMinutes() * 60 * 1000;
+}
+
+const LAST_ACTIVITY_KEY = 'nasq_last_activity_v2';
+
+export function recordUserActivity() {
+  localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+}
+
+export function getLastActivityTimestamp(): number {
+  const raw = localStorage.getItem(LAST_ACTIVITY_KEY);
+  return raw ? parseInt(raw, 10) || Date.now() : Date.now();
+}
+
+export function isSessionExpiredDueToInactivity(): boolean {
+  const raw = localStorage.getItem(LAST_ACTIVITY_KEY);
+  if (!raw) return false;
+  const lastActive = parseInt(raw, 10);
+  if (isNaN(lastActive)) return false;
+  return Date.now() - lastActive > getInactivityTimeoutMs();
+}
+
 // User Session Management (Browser Tab session state)
 export function getCurrentSession(): UserSession | null {
   const raw = localStorage.getItem(SESSION_KEY);
   if (raw) {
+    // Check if session has expired due to inactivity
+    if (isSessionExpiredDueToInactivity()) {
+      setCurrentSession(null);
+      return null;
+    }
     try {
       return JSON.parse(raw);
     } catch {
@@ -100,8 +135,10 @@ export function getCurrentSession(): UserSession | null {
 export function setCurrentSession(session: UserSession | null) {
   if (session) {
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
   } else {
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(LAST_ACTIVITY_KEY);
   }
 }
 

@@ -7,14 +7,16 @@ export interface AdminConfig {
   name: string;
   companyLogoUrl?: string;
   companyName?: string;
+  inactivityTimeoutMinutes?: number; // Inactivity timeout in minutes (e.g. 5, 10, 15, 30, 60)
 }
 
 export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
   username: 'admin',
   password: 'testadmin',
   name: 'Administrator NASQ',
-  companyLogoUrl: '',
+  companyLogoUrl: 'https://ik.imagekit.io/5iflbbg7x/NASQ_ICON.png',
   companyName: 'NASQ ABSENSI',
+  inactivityTimeoutMinutes: 15,
 };
 
 export const SUPERUSER_EMPLOYEE: Employee = {

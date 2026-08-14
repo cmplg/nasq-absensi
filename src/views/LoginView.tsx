@@ -119,22 +119,16 @@ export function LoginView({ onLoginSuccess, initialRole = 'karyawan' }: LoginVie
       <div className="relative w-full max-w-md space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          {getAdminConfig().companyLogoUrl ? (
-            <div className="flex justify-center mb-1">
-              <img
-                src={getAdminConfig().companyLogoUrl}
-                alt="Logo"
-                className="max-h-16 max-w-[180px] object-contain drop-shadow-sm p-1 bg-white rounded-2xl border border-slate-200"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
-            </div>
-          ) : (
-            <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-600 rounded-2xl shadow-md font-black text-white text-2xl tracking-tighter mb-1">
-              N
-            </div>
-          )}
+          <div className="flex justify-center mb-1">
+            <img
+              src={getAdminConfig().companyLogoUrl || 'https://ik.imagekit.io/5iflbbg7x/NASQ_ICON.png'}
+              alt="Logo"
+              className="max-h-16 max-w-[180px] object-contain drop-shadow-sm p-1 bg-white rounded-2xl border border-slate-200"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://ik.imagekit.io/5iflbbg7x/NASQ_ICON.png';
+              }}
+            />
+          </div>
           <div className="flex items-center justify-center space-x-1.5">
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">
               {getAdminConfig().companyName || 'NASQ Absensi'}

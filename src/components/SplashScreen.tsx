@@ -7,7 +7,6 @@ import {
 } from '../lib/firestoreSync';
 import {
   ShieldCheck,
-  Sparkles,
   UserCheck,
   ChevronRight,
   ArrowLeft,
@@ -22,12 +21,17 @@ interface SplashScreenProps {
   onLoginSuccess: (session: UserSession) => void;
   logoUrl?: string;
   companyName?: string;
+  inactivityNotice?: string | null;
+  onClearInactivityNotice?: () => void;
 }
 
-export function SplashScreen({ onLoginSuccess, logoUrl, companyName }: SplashScreenProps) {
-  const [progress, setProgress] = useState(0);
-  const [currentStep, setCurrentStep] = useState(0);
-
+export function SplashScreen({
+  onLoginSuccess,
+  logoUrl,
+  companyName,
+  inactivityNotice,
+  onClearInactivityNotice,
+}: SplashScreenProps) {
   // Selected Portal Role: null = Main choice screen, 'karyawan' | 'admin' = Login form active
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
@@ -37,35 +41,33 @@ export function SplashScreen({ onLoginSuccess, logoUrl, companyName }: SplashScr
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const steps = [
-    'Menginisialisasi Engine & Enkripsi Data...',
-    'Menghubungkan Satelit GPS & Server Cloud...',
-    'Memverifikasi Keamanan Akses & Lokasi...',
-    'Sistem Siap! Silakan Pilih Portal Akses Below:',
-  ];
+  // Typewriter effect state
+  const [typedText, setTypedText] = useState('');
 
-  // Initial loading progress effect
   useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
+    if (selectedRole === 'karyawan' || selectedRole === 'admin') {
+      const fullText =
+        selectedRole === 'karyawan'
+          ? 'Hubungi divisi Human Resources untuk mendapatkan username dan sandi karyawan.'
+          : 'Dashboard khusus Human Resources. hubungi divisi terkait untuk mendapatkan user khusus HR.';
+
+      setTypedText('');
+      let charIndex = 0;
+      const interval = setInterval(() => {
+        if (charIndex <= fullText.length) {
+          setTypedText(fullText.slice(0, charIndex));
+          charIndex++;
+        } else {
           clearInterval(interval);
-          return 100;
         }
-        const next = prev + Math.floor(Math.random() * 14) + 10;
-        const bounded = next > 100 ? 100 : next;
+      }, 30);
+      return () => clearInterval(interval);
+    } else {
+      setTypedText('');
+    }
+  }, [selectedRole]);
 
-        if (bounded < 30) setCurrentStep(0);
-        else if (bounded < 65) setCurrentStep(1);
-        else if (bounded < 95) setCurrentStep(2);
-        else setCurrentStep(3);
-
-        return bounded;
-      });
-    }, 90);
-
-    return () => clearInterval(interval);
-  }, []);
+  const activeLogo = logoUrl || 'https://ik.imagekit.io/5iflbbg7x/NASQ_ICON.png';
 
   const handleSelectRole = (role: UserRole) => {
     setSelectedRole(role);
@@ -173,121 +175,100 @@ export function SplashScreen({ onLoginSuccess, logoUrl, companyName }: SplashScr
   const displayName = companyName || 'NASQ ABSENSI';
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-between p-4 sm:p-6 bg-slate-950 text-white select-none overflow-y-auto">
-      {/* Background Animated Ambient Glow Lights */}
-      <div className="fixed top-10 -left-20 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none animate-pulse" />
-      <div className="fixed bottom-10 -right-20 w-80 h-80 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none animate-pulse delay-700" />
-
-      {/* Top Security Badge Header */}
-      <div className="w-full max-w-md flex items-center justify-center pt-2 shrink-0">
-        <div className="flex items-center space-x-2 px-3.5 py-1.5 bg-slate-900/90 border border-slate-800/90 rounded-full backdrop-blur-md shadow-lg">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span className="text-[11px] font-bold text-slate-300 tracking-wider uppercase">
-            Encrypted GPS Presence System
-          </span>
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 sm:p-6 bg-slate-100 text-slate-800 select-none overflow-y-auto transition-all duration-500">
+      {/* Main Center Area: Responsive container */}
+      <div
+        className={`w-full max-w-md flex flex-col items-center text-center px-2 z-10 transition-all duration-500 ease-out ${
+          selectedRole !== null ? 'space-y-4 py-2' : 'space-y-7 py-6'
+        }`}
+      >
+        {/* Logo Container with Smooth Move-Up and Scale Transition */}
+        <div
+          className={`flex items-center justify-center transition-all duration-500 ease-out transform ${
+            selectedRole !== null ? '-translate-y-2 scale-75' : 'translate-y-0 scale-100'
+          }`}
+        >
+          <img
+            src={activeLogo}
+            alt={displayName}
+            className="w-28 h-28 sm:w-32 sm:h-32 object-contain transition-all duration-500 drop-shadow-xs"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://ik.imagekit.io/5iflbbg7x/NASQ_ICON.png';
+            }}
+          />
         </div>
-      </div>
 
-      {/* Main Center Area: Logo + Brand + 3D Portal Buttons or Login Card */}
-      <div className="my-auto w-full max-w-md py-4 flex flex-col items-center text-center space-y-5 px-1">
-        {/* Animated Glow Logo Container */}
-        <div className="relative group">
-          <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500 to-indigo-500 rounded-3xl blur-xl opacity-60 group-hover:opacity-85 transition animate-pulse" />
-
-          {logoUrl ? (
-            <div className="relative w-20 h-20 sm:w-24 sm:h-24 bg-slate-900/90 border border-slate-800/80 rounded-3xl p-3 flex items-center justify-center shadow-2xl backdrop-blur-xl">
-              <img
-                src={logoUrl}
-                alt={displayName}
-                className="max-w-full max-h-full object-contain drop-shadow-[0_0_12px_rgba(16,185,129,0.5)]"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
+        {/* Inactivity Notice Banner */}
+        {inactivityNotice && (
+          <div className="w-full p-3.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs flex items-start space-x-2 text-left animate-fadeIn">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <span className="font-semibold block mb-0.5">Sesi Berakhir</span>
+              <span>{inactivityNotice}</span>
             </div>
-          ) : (
-            <div className="relative w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-900 rounded-3xl flex items-center justify-center shadow-2xl border border-emerald-400/30">
-              <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-xs border border-white/20">
-                <span className="text-3xl sm:text-4xl font-black text-white tracking-wider drop-shadow-md">N</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Brand Title */}
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-emerald-200">
-            {displayName}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400 font-medium">
-            Sistem Kehadiran Realtime &amp; Laporan Tugas Lapangan
-          </p>
-        </div>
+            {onClearInactivityNotice && (
+              <button
+                type="button"
+                onClick={onClearInactivityNotice}
+                className="text-amber-500 hover:text-amber-800 text-xs font-bold px-1"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        )}
 
         {/* CONDITION 1: MAIN PORTAL SELECTION (selectedRole === null) */}
         {selectedRole === null && (
-          <div className="w-full space-y-4 pt-1 animate-fadeIn">
-            <p className="text-[11px] font-extrabold uppercase tracking-widest text-emerald-400 flex items-center justify-center space-x-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
-              <span>Pilih Portal Akses Anda</span>
-            </p>
-
-            <div className="grid grid-cols-1 gap-3.5 text-left">
-              {/* 3D Button 1: PORTAL KARYAWAN */}
+          <div className="w-full space-y-3 animate-fadeIn">
+            <div className="grid grid-cols-1 gap-3 text-left">
+              {/* Button 1: Absen Karyawan */}
               <button
                 type="button"
                 onClick={() => handleSelectRole('karyawan')}
-                className="group relative w-full p-4 rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 border-t-2 border-emerald-300/80 shadow-[0_10px_0_#047857,0_18px_30px_rgba(16,185,129,0.35)] hover:shadow-[0_12px_0_#047857,0_22px_35px_rgba(16,185,129,0.45)] hover:-translate-y-0.5 active:translate-y-2 active:shadow-[0_2px_0_#047857,0_5px_10px_rgba(16,185,129,0.2)] transition-all cursor-pointer flex items-center justify-between"
+                style={{ backgroundColor: '#acddff' }}
+                className="group relative w-full p-4 rounded-xl border border-sky-300/80 hover:brightness-95 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between"
               >
                 <div className="flex items-center space-x-3.5">
-                  <div className="w-12 h-12 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
-                    <UserCheck className="w-6 h-6 text-white drop-shadow-md" />
+                  <div className="w-11 h-11 rounded-lg bg-white/70 border border-sky-300 flex items-center justify-center shrink-0">
+                    <UserCheck className="w-5 h-5 text-sky-800" />
                   </div>
                   <div>
-                    <div className="flex items-center space-x-1.5">
-                      <span className="font-black text-base text-white tracking-wide drop-shadow-xs">
-                        PORTAL KARYAWAN
-                      </span>
-                      <span className="bg-emerald-400/30 text-emerald-100 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-300/30">
-                        Absen
-                      </span>
-                    </div>
-                    <p className="text-xs text-emerald-100/90 font-medium mt-0.5">
+                    <span className="font-bold text-base text-slate-900 tracking-tight block">
+                      Absen Karyawan
+                    </span>
+                    <p className="text-xs text-slate-700 font-medium mt-0.5">
                       Absen Masuk, Pulang &amp; Laporan Tugas
                     </p>
                   </div>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-white/25 transition">
-                  <ChevronRight className="w-5 h-5 text-white group-hover:translate-x-0.5 transition-transform" />
+                <div className="w-8 h-8 rounded-lg bg-white/70 flex items-center justify-center shrink-0 group-hover:bg-white transition">
+                  <ChevronRight className="w-4 h-4 text-sky-900 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </button>
 
-              {/* 3D Button 2: PORTAL ADMIN / HRD */}
+              {/* Button 2: Human Resources */}
               <button
                 type="button"
                 onClick={() => handleSelectRole('admin')}
-                className="group relative w-full p-4 rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-900 border-t-2 border-indigo-400/80 shadow-[0_10px_0_#312e81,0_18px_30px_rgba(99,102,241,0.35)] hover:shadow-[0_12px_0_#312e81,0_22px_35px_rgba(99,102,241,0.45)] hover:-translate-y-0.5 active:translate-y-2 active:shadow-[0_2px_0_#312e81,0_5px_10px_rgba(99,102,241,0.2)] transition-all cursor-pointer flex items-center justify-between"
+                style={{ backgroundColor: '#f9dfa4', borderStyle: 'groove' }}
+                className="group relative w-full p-4 rounded-xl border-2 border-amber-300/90 hover:brightness-95 shadow-xs hover:shadow-md transition-all cursor-pointer flex items-center justify-between"
               >
                 <div className="flex items-center space-x-3.5">
-                  <div className="w-12 h-12 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-transform">
-                    <ShieldCheck className="w-6 h-6 text-white drop-shadow-md" />
+                  <div className="w-11 h-11 rounded-lg bg-white/70 border border-amber-300 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-5 h-5 text-amber-800" />
                   </div>
                   <div>
-                    <div className="flex items-center space-x-1.5">
-                      <span className="font-black text-base text-white tracking-wide drop-shadow-xs">
-                        PORTAL ADMIN / HRD
-                      </span>
-                      <span className="bg-indigo-400/30 text-indigo-100 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-300/30">
-                        Kelola
-                      </span>
-                    </div>
-                    <p className="text-xs text-indigo-100/90 font-medium mt-0.5">
+                    <span className="font-bold text-base text-slate-900 tracking-tight block">
+                      Human Resources
+                    </span>
+                    <p className="text-xs text-slate-700 font-medium mt-0.5">
                       Manajemen Karyawan &amp; Rekapitulasi Data
                     </p>
                   </div>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0 group-hover:bg-white/25 transition">
-                  <ChevronRight className="w-5 h-5 text-white group-hover:translate-x-0.5 transition-transform" />
+                <div className="w-8 h-8 rounded-lg bg-white/70 flex items-center justify-center shrink-0 group-hover:bg-white transition">
+                  <ChevronRight className="w-4 h-4 text-amber-900 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </button>
             </div>
@@ -296,28 +277,28 @@ export function SplashScreen({ onLoginSuccess, logoUrl, companyName }: SplashScr
 
         {/* CONDITION 2: IN-PLACE LOGIN FORM (selectedRole !== null) */}
         {selectedRole !== null && (
-          <div className="w-full bg-slate-900/90 border border-slate-800 rounded-3xl p-5 shadow-2xl backdrop-blur-xl text-left space-y-4 animate-scaleUp">
+          <div className="w-full bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-lg text-left space-y-4 animate-scaleUp transition-all duration-500">
             {/* Header with Back Button */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <button
                 type="button"
                 onClick={() => setSelectedRole(null)}
-                className="text-xs font-bold text-slate-400 hover:text-white flex items-center space-x-1.5 bg-slate-800/80 hover:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 transition"
+                className="text-xs font-medium text-slate-600 hover:text-slate-900 flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg border border-slate-200 transition"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Pilihan Portal</span>
+                <span>Kembali</span>
               </button>
 
               <div className="flex items-center space-x-1.5">
                 {selectedRole === 'admin' ? (
-                  <span className="bg-indigo-500/20 text-indigo-300 text-xs font-extrabold px-2.5 py-1 rounded-full border border-indigo-500/30 flex items-center space-x-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Portal Admin HRD</span>
+                  <span className="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-indigo-200 flex items-center space-x-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Human Resources</span>
                   </span>
                 ) : (
-                  <span className="bg-emerald-500/20 text-emerald-300 text-xs font-extrabold px-2.5 py-1 rounded-full border border-emerald-500/30 flex items-center space-x-1">
-                    <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Portal Karyawan</span>
+                  <span className="bg-emerald-50 text-emerald-700 text-xs font-semibold px-2.5 py-1 rounded-full border border-emerald-200 flex items-center space-x-1">
+                    <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Absen Karyawan</span>
                   </span>
                 )}
               </div>
@@ -325,8 +306,8 @@ export function SplashScreen({ onLoginSuccess, logoUrl, companyName }: SplashScr
 
             {/* Error Toast Alert */}
             {errorMessage && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-2xl flex items-start space-x-2.5 text-rose-300 text-xs animate-shake">
-                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start space-x-2.5 text-rose-700 text-xs">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
                 <span className="font-medium">{errorMessage}</span>
               </div>
             )}
@@ -334,8 +315,8 @@ export function SplashScreen({ onLoginSuccess, logoUrl, companyName }: SplashScr
             <form onSubmit={handleLoginSubmit} className="space-y-3.5">
               {/* Username Input */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center space-x-1">
-                  <User className="w-3.5 h-3.5 text-slate-400" />
+                <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center space-x-1">
+                  <User className="w-3.5 h-3.5 text-slate-500" />
                   <span>
                     {selectedRole === 'admin' ? 'Username Admin' : 'Username / NIK Karyawan'}
                   </span>
@@ -346,14 +327,14 @@ export function SplashScreen({ onLoginSuccess, logoUrl, companyName }: SplashScr
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder={selectedRole === 'admin' ? 'Masukkan username admin' : 'Username karyawan'}
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-600"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 placeholder:text-slate-400 transition"
                 />
               </div>
 
               {/* Password Input */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center space-x-1">
-                  <Lock className="w-3.5 h-3.5 text-slate-400" />
+                <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center space-x-1">
+                  <Lock className="w-3.5 h-3.5 text-slate-500" />
                   <span>Kata Sandi / PIN</span>
                 </label>
                 <input
@@ -362,21 +343,18 @@ export function SplashScreen({ onLoginSuccess, logoUrl, companyName }: SplashScr
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan kata sandi..."
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:text-slate-600"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 placeholder:text-slate-400 transition"
                 />
-                <p className="text-[10px] text-slate-500 mt-1">
-                  Default karyawan baru: <span className="font-mono text-slate-400">123456</span>
-                </p>
               </div>
 
-              {/* 3D Submit Login Button */}
+              {/* Clean Submit Login Button */}
               <button
                 type="submit"
                 disabled={isLoggingIn}
-                className={`group relative w-full py-3.5 px-4 rounded-xl font-extrabold text-xs transition cursor-pointer flex items-center justify-center space-x-2 border-t-2 shadow-lg ${
+                className={`w-full py-3 px-4 rounded-lg font-bold text-xs tracking-wider transition cursor-pointer flex items-center justify-center space-x-2 text-white shadow-sm active:scale-[0.99] ${
                   selectedRole === 'admin'
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 border-indigo-400/70 text-white shadow-[0_6px_0_#312e81] hover:shadow-[0_8px_0_#312e81] active:translate-y-1 active:shadow-[0_1px_0_#312e81]'
-                    : 'bg-gradient-to-r from-emerald-600 to-teal-700 border-emerald-400/70 text-white shadow-[0_6px_0_#047857] hover:shadow-[0_8px_0_#047857] active:translate-y-1 active:shadow-[0_1px_0_#047857]'
+                    ? 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800'
+                    : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800'
                 }`}
               >
                 {isLoggingIn ? (
@@ -387,41 +365,27 @@ export function SplashScreen({ onLoginSuccess, logoUrl, companyName }: SplashScr
                 ) : (
                   <>
                     <KeyRound className="w-4 h-4 text-white" />
-                    <span>
-                      Masuk Ke {selectedRole === 'admin' ? 'Dashboard Admin' : 'Dashboard Karyawan'}
-                    </span>
+                    <span>LOGIN</span>
                   </>
                 )}
               </button>
             </form>
           </div>
         )}
-      </div>
 
-      {/* Bottom Progress Bar */}
-      <div className="w-full max-w-md space-y-2 pb-2 shrink-0">
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-400 px-1">
-            <span className="flex items-center space-x-1.5 text-emerald-400 truncate max-w-[280px]">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="text-slate-300 truncate">{steps[currentStep]}</span>
-            </span>
-            <span className="font-mono text-emerald-400 font-bold shrink-0">{progress}%</span>
+        {/* Typewriter Note for Karyawan & Human Resources */}
+        {selectedRole !== null && (
+          <div className="w-full min-h-[44px] px-3 pt-1 flex items-center justify-center">
+            <p className="text-xs text-slate-600 text-center font-medium leading-relaxed">
+              <span>{typedText}</span>
+              <span
+                className={`inline-block w-1.5 h-3.5 ml-1 animate-pulse align-middle ${
+                  selectedRole === 'admin' ? 'bg-indigo-600' : 'bg-emerald-600'
+                }`}
+              />
+            </p>
           </div>
-
-          <div className="w-full h-1.5 bg-slate-900 border border-slate-800 rounded-full overflow-hidden p-0.5">
-            <div
-              className="h-full bg-gradient-to-r from-emerald-500 via-teal-400 to-indigo-500 rounded-full transition-all duration-150 shadow-[0_0_10px_rgba(16,185,129,0.8)]"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-
-        <div className="text-center">
-          <p className="text-[10px] text-slate-500 font-mono">
-            NASQ Absensi v2.4 • Keamanan GPS Geofencing &amp; Cloud Database
-          </p>
-        </div>
+        )}
       </div>
     </div>
   );
