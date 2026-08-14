@@ -25,6 +25,48 @@ export function LoginView({ onLoginSuccess, initialRole = 'karyawan' }: LoginVie
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
 
+  // Typing effect animation state
+  const sentences = [
+    'NASQ adalah aplikasi untuk kebutuhan management karyawan lapangan dengan fitur dan penggunaan yang mudah.',
+    'Aplikasi ini dibuat sesuai dengan kebutuhan management penugasan, karyawan dengan absensi menggunakan Verifikasi Wajah dan Lokasi GPS dengan radius.',
+    'Anda bisa membeli layanan ini dengan atau tanpa tambahan fitur.',
+  ];
+  const [sentenceIndex, setSentenceIndex] = useState(0);
+  const [displayedText, setDisplayedText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentSentence = sentences[sentenceIndex];
+    let timer: NodeJS.Timeout;
+
+    if (!isDeleting) {
+      if (displayedText.length < currentSentence.length) {
+        // Typing forward
+        timer = setTimeout(() => {
+          setDisplayedText(currentSentence.substring(0, displayedText.length + 1));
+        }, 35);
+      } else {
+        // Finished typing sentence, wait before deleting
+        timer = setTimeout(() => {
+          setIsDeleting(true);
+        }, 2200);
+      }
+    } else {
+      if (displayedText.length > 0) {
+        // Deleting backward
+        timer = setTimeout(() => {
+          setDisplayedText(currentSentence.substring(0, displayedText.length - 1));
+        }, 18);
+      } else {
+        // Finished deleting, move to next sentence
+        setIsDeleting(false);
+        setSentenceIndex((prev) => (prev + 1) % sentences.length);
+      }
+    }
+
+    return () => clearTimeout(timer);
+  }, [displayedText, isDeleting, sentenceIndex]);
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -251,6 +293,16 @@ export function LoginView({ onLoginSuccess, initialRole = 'karyawan' }: LoginVie
               )}
             </button>
           </form>
+        </div>
+
+        {/* Animated Typing Effect Info Banner (Centered at bottom of first screen) */}
+        <div className="pt-2 text-center">
+          <div className="inline-flex items-center justify-center max-w-md mx-auto px-4 py-2.5 rounded-2xl bg-white/80 backdrop-blur-xs border border-slate-200/80 shadow-2xs min-h-[58px]">
+            <p className="text-xs sm:text-[13px] text-slate-700 font-medium leading-relaxed tracking-tight text-center">
+              <span>{displayedText}</span>
+              <span className="inline-block w-1.5 h-4 ml-1 bg-emerald-600 animate-pulse align-middle rounded-full" />
+            </p>
+          </div>
         </div>
       </div>
 

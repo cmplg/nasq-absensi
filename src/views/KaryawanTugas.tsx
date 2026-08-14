@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { TaskLocation, Employee } from '../types';
 import { MapView } from '../components/MapView';
 import { calculateDistanceMeters, formatIndonesianDate } from '../lib/geo';
+import { ImageViewerModal } from '../components/ImageViewerModal';
 import {
   Briefcase,
   MapPin,
@@ -14,6 +15,7 @@ import {
   Search,
   Building2,
   FileText,
+  ZoomIn,
 } from 'lucide-react';
 
 interface KaryawanTugasProps {
@@ -25,6 +27,11 @@ export function KaryawanTugas({ assignedTasks }: KaryawanTugasProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
+  const [previewImage, setPreviewImage] = useState<{
+    url: string;
+    title: string;
+    description?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -221,11 +228,27 @@ export function KaryawanTugas({ assignedTasks }: KaryawanTugasProps) {
                   {task.locationPhoto && task.locationPhoto.trim() !== '' && (
                     <div className="pt-2">
                       <p className="text-[11px] font-bold text-slate-500 mb-1.5">Foto Patokan Lokasi:</p>
-                      <img
-                        src={task.locationPhoto}
-                        alt={`Patokan ${task.title}`}
-                        className="w-full max-h-48 object-cover rounded-2xl border border-slate-200 shadow-xs"
-                      />
+                      <div
+                        onClick={() =>
+                          setPreviewImage({
+                            url: task.locationPhoto!,
+                            title: `Foto Lokasi: ${task.title}`,
+                            description: `${task.address}${task.locationNotes ? ` • ${task.locationNotes}` : ''}`,
+                          })
+                        }
+                        className="relative group cursor-pointer overflow-hidden rounded-2xl border border-slate-200 shadow-xs"
+                        title="Klik untuk memperbesar & zoom foto"
+                      >
+                        <img
+                          src={task.locationPhoto}
+                          alt={`Patokan ${task.title}`}
+                          className="w-full max-h-48 object-cover transition duration-300 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-1.5 text-white text-xs font-bold">
+                          <ZoomIn className="w-5 h-5 drop-shadow-md" />
+                          <span>Perbesar Foto</span>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -233,6 +256,17 @@ export function KaryawanTugas({ assignedTasks }: KaryawanTugasProps) {
             );
           })}
         </div>
+      )}
+
+      {/* Interactive Image Zoom In/Out Viewer Modal */}
+      {previewImage && (
+        <ImageViewerModal
+          isOpen={Boolean(previewImage)}
+          imageUrl={previewImage.url}
+          title={previewImage.title}
+          description={previewImage.description}
+          onClose={() => setPreviewImage(null)}
+        />
       )}
     </div>
   );

@@ -236,24 +236,27 @@ export function Navbar({
 
             {/* Management & Settings Action */}
             <div className="pt-2 border-t border-slate-100 space-y-2">
-              <button
-                onClick={() => {
-                  setProfileBottomSheetOpen(false);
-                  setCompanySettingsOpen(true);
-                }}
-                className="w-full py-3.5 px-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200/80 rounded-2xl font-bold text-xs flex items-center justify-between transition shadow-2xs group text-left"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-xs">
-                    <Settings className="w-4 h-4" />
+              {/* Only show Company Settings for Administrator */}
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    setProfileBottomSheetOpen(false);
+                    setCompanySettingsOpen(true);
+                  }}
+                  className="w-full py-3.5 px-4 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200/80 rounded-2xl font-bold text-xs flex items-center justify-between transition shadow-2xs group text-left"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-xs">
+                      <Settings className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="font-extrabold text-xs text-slate-900 block">Pengaturan Perusahaan</span>
+                      <span className="text-[11px] text-slate-500 font-medium">Logo, nama perusahaan, durasi sesi &amp; akun</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-extrabold text-xs text-slate-900 block">Pengaturan Perusahaan</span>
-                    <span className="text-[11px] text-slate-500 font-medium">Logo, nama perusahaan, durasi sesi &amp; akun</span>
-                  </div>
-                </div>
-                <span className="text-indigo-600 font-black text-sm group-hover:translate-x-0.5 transition-transform">›</span>
-              </button>
+                  <span className="text-indigo-600 font-black text-sm group-hover:translate-x-0.5 transition-transform">›</span>
+                </button>
+              )}
 
               {/* Logout Action */}
               <button

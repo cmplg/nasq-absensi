@@ -41,8 +41,48 @@ export function SplashScreen({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Typewriter effect state
+  // Typewriter effect state for sub-login screens
   const [typedText, setTypedText] = useState('');
+
+  // Continuous looping typewriter effect for the MAIN FIRST PAGE (selectedRole === null)
+  const mainSentences = [
+    'NASQ adalah aplikasi untuk kebutuhan management karyawan lapangan dengan fitur dan penggunaan yang mudah.',
+    'Aplikasi ini dibuat sesuai dengan kebutuhan management penugasan, karyawan dengan absensi menggunakan Verifikasi Wajah dan Lokasi GPS dengan radius.',
+    'Anda bisa membeli layanan ini dengan atau tanpa tambahan fitur.',
+  ];
+  const [mainSentenceIndex, setMainSentenceIndex] = useState(0);
+  const [mainDisplayedText, setMainDisplayedText] = useState('');
+  const [isMainDeleting, setIsMainDeleting] = useState(false);
+
+  useEffect(() => {
+    if (selectedRole !== null) return;
+
+    const currentSentence = mainSentences[mainSentenceIndex];
+    let timer: NodeJS.Timeout;
+
+    if (!isMainDeleting) {
+      if (mainDisplayedText.length < currentSentence.length) {
+        timer = setTimeout(() => {
+          setMainDisplayedText(currentSentence.substring(0, mainDisplayedText.length + 1));
+        }, 35);
+      } else {
+        timer = setTimeout(() => {
+          setIsMainDeleting(true);
+        }, 2200);
+      }
+    } else {
+      if (mainDisplayedText.length > 0) {
+        timer = setTimeout(() => {
+          setMainDisplayedText(currentSentence.substring(0, mainDisplayedText.length - 1));
+        }, 18);
+      } else {
+        setIsMainDeleting(false);
+        setMainSentenceIndex((prev) => (prev + 1) % mainSentences.length);
+      }
+    }
+
+    return () => clearTimeout(timer);
+  }, [mainDisplayedText, isMainDeleting, mainSentenceIndex, selectedRole]);
 
   useEffect(() => {
     if (selectedRole === 'karyawan' || selectedRole === 'admin') {
@@ -271,6 +311,16 @@ export function SplashScreen({
                   <ChevronRight className="w-4 h-4 text-amber-900 group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </button>
+            </div>
+
+            {/* Continuous Looping Typewriter Effect Banner on First Screen */}
+            <div className="pt-2 text-center">
+              <div className="inline-flex items-center justify-center w-full px-4 py-3 rounded-2xl bg-white/80 backdrop-blur-xs border border-slate-200/90 shadow-2xs min-h-[64px]">
+                <p className="text-xs sm:text-[13px] text-slate-700 font-medium leading-relaxed tracking-tight text-center">
+                  <span>{mainDisplayedText}</span>
+                  <span className="inline-block w-1.5 h-4 ml-1 bg-emerald-600 animate-pulse align-middle rounded-full" />
+                </p>
+              </div>
             </div>
           </div>
         )}

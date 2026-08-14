@@ -3,6 +3,7 @@ import { TaskLocation, Employee } from '../types';
 import { MapView } from '../components/MapView';
 import { searchPlaces, PlaceSuggestion, getAddressFromCoords } from '../lib/geo';
 import { TaskLocationCamModal } from '../components/TaskLocationCamModal';
+import { ImageViewerModal } from '../components/ImageViewerModal';
 import {
   MapPin,
   Plus,
@@ -23,6 +24,7 @@ import {
   Upload,
   Camera,
   FileText,
+  ZoomIn,
 } from 'lucide-react';
 
 // Helper to scale down images for lightweight resolution (~480x480 px, ~12KB)
@@ -181,6 +183,13 @@ export function AdminTugas({
     status: 'aktif',
     locationPhoto: '',
   });
+
+  // State for Image Viewer Modal (Zoom in/out preview)
+  const [previewImage, setPreviewImage] = useState<{
+    url: string;
+    title: string;
+    description?: string;
+  } | null>(null);
 
   // Task Web Camera Modal state
   const [showTaskCamModal, setShowTaskCamModal] = useState<boolean>(false);
@@ -383,15 +392,30 @@ export function AdminTugas({
                       taskTitle={task.title}
                     />
                     {task.locationPhoto && task.locationPhoto.trim() !== '' ? (
-                      <div className="absolute top-2 right-2 group z-[400]">
-                        <img
-                          src={task.locationPhoto}
-                          alt="Foto Lokasi"
-                          className="w-16 h-16 rounded-xl object-cover border-2 border-white shadow-md transition hover:scale-110"
-                        />
-                        <span className="absolute bottom-0 right-0 bg-slate-900/80 text-white text-[9px] px-1 py-0.5 rounded font-bold">
-                          Foto
-                        </span>
+                      <div
+                        onClick={() =>
+                          setPreviewImage({
+                            url: task.locationPhoto!,
+                            title: `Foto Patokan: ${task.title}`,
+                            description: `${task.address}${task.locationNotes ? ` • ${task.locationNotes}` : ''}`,
+                          })
+                        }
+                        className="absolute top-2 right-2 group z-[400] cursor-pointer"
+                        title="Klik untuk melihat & perbesar foto (Zoom In/Out)"
+                      >
+                        <div className="relative overflow-hidden rounded-xl border-2 border-white shadow-md transition-all duration-200 group-hover:scale-105 group-hover:shadow-lg">
+                          <img
+                            src={task.locationPhoto}
+                            alt="Foto Lokasi"
+                            className="w-16 h-16 object-cover"
+                          />
+                          <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <ZoomIn className="w-5 h-5 text-white drop-shadow-md" />
+                          </div>
+                          <span className="absolute bottom-0 right-0 bg-slate-900/80 text-white text-[9px] px-1 py-0.5 rounded font-bold">
+                            Foto
+                          </span>
+                        </div>
                       </div>
                     ) : null}
                   </div>
@@ -777,11 +801,26 @@ export function AdminTugas({
 
                 {formData.locationPhoto && formData.locationPhoto.trim() !== '' ? (
                   <div className="rounded-2xl border border-slate-300 bg-slate-50 flex items-center justify-between p-3 gap-3">
-                    <img
-                      src={formData.locationPhoto}
-                      alt="Foto Lokasi"
-                      className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0 shadow-sm"
-                    />
+                    <div
+                      onClick={() =>
+                        setPreviewImage({
+                          url: formData.locationPhoto!,
+                          title: formData.title || 'Foto Lokasi Penugasan',
+                          description: formData.address || 'Pratinjau Foto Patokan Lokasi',
+                        })
+                      }
+                      className="relative group cursor-pointer shrink-0"
+                      title="Klik untuk memperbesar & zoom foto"
+                    >
+                      <img
+                        src={formData.locationPhoto}
+                        alt="Foto Lokasi"
+                        className="w-16 h-16 rounded-xl object-cover border border-slate-200 shadow-sm transition group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-slate-950/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <ZoomIn className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
                     <div className="flex-1 space-y-0.5 min-w-0">
                       <p className="font-extrabold text-slate-900 text-xs truncate">Foto Lokasi Terpilih</p>
                       <p className="text-[10px] text-emerald-700 font-bold bg-emerald-50 inline-block px-2 py-0.5 rounded border border-emerald-200">
@@ -941,6 +980,17 @@ export function AdminTugas({
           setFormData((prev) => ({ ...prev, locationPhoto: photoDataUrl }));
         }}
       />
+
+      {/* Interactive Image Zoom In/Out Viewer Modal */}
+      {previewImage && (
+        <ImageViewerModal
+          isOpen={Boolean(previewImage)}
+          imageUrl={previewImage.url}
+          title={previewImage.title}
+          description={previewImage.description}
+          onClose={() => setPreviewImage(null)}
+        />
+      )}
     </div>
   );
 }

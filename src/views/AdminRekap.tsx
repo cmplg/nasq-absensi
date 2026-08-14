@@ -3,6 +3,7 @@ import { AttendanceRecord, Employee, TaskLocation } from '../types';
 import { exportAttendanceToCSV } from '../lib/storage';
 import { printRekapPDF, RekapExportData } from '../lib/exportUtils';
 import { WhatsAppShareModal } from '../components/WhatsAppShareModal';
+import { ImageViewerModal } from '../components/ImageViewerModal';
 import { formatIndonesianDate } from '../lib/geo';
 import { MapView } from '../components/MapView';
 import {
@@ -22,6 +23,7 @@ import {
   User,
   Share2,
   Printer,
+  ZoomIn,
 } from 'lucide-react';
 
 interface AdminRekapProps {
@@ -44,6 +46,11 @@ export function AdminRekap({
   const [endDate, setEndDate] = useState<string>('');
   const [selectedRecord, setSelectedRecord] = useState<AttendanceRecord | null>(null);
   const [showWAShareModal, setShowWAShareModal] = useState<boolean>(false);
+  const [previewImage, setPreviewImage] = useState<{
+    url: string;
+    title: string;
+    description?: string;
+  } | null>(null);
 
   // Filter records
   const filteredRecords = records.filter((r) => {
@@ -527,13 +534,32 @@ export function AdminRekap({
             {/* Photo Watermark Display */}
             {selectedRecord.verifiedPhoto && selectedRecord.verifiedPhoto.trim() !== '' ? (
               <div className="space-y-1.5">
-                <p className="font-bold text-slate-800">Foto Hasil Capture Watermarked:</p>
-                <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-slate-950">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-slate-800">Foto Hasil Capture Watermarked:</p>
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    Klik foto untuk Zoom In/Out
+                  </span>
+                </div>
+                <div
+                  onClick={() =>
+                    setPreviewImage({
+                      url: selectedRecord.verifiedPhoto!,
+                      title: `Foto Presensi: ${selectedRecord.employeeName} (${selectedRecord.type === 'masuk' ? 'Absen Masuk' : selectedRecord.type === 'pulang' ? 'Absen Pulang' : 'Izin'})`,
+                      description: `${formatIndonesianDate(selectedRecord.timestamp)} ${selectedRecord.timeString} WIB • ${selectedRecord.address}`,
+                    })
+                  }
+                  className="relative group cursor-pointer rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-slate-950"
+                  title="Klik untuk memperbesar & zoom foto presensi"
+                >
                   <img
                     src={selectedRecord.verifiedPhoto}
                     alt="Verifikasi Watermark"
-                    className="w-full h-60 object-contain mx-auto"
+                    className="w-full h-60 object-contain mx-auto transition duration-300 group-hover:scale-105"
                   />
+                  <div className="absolute inset-0 bg-slate-950/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2 text-white font-bold text-xs">
+                    <ZoomIn className="w-5 h-5 drop-shadow-md" />
+                    <span>Perbesar &amp; Zoom</span>
+                  </div>
                 </div>
               </div>
             ) : null}
@@ -609,6 +635,17 @@ export function AdminRekap({
         onClose={() => setShowWAShareModal(false)}
         data={exportData}
       />
+
+      {/* Interactive Image Zoom In/Out Viewer Modal */}
+      {previewImage && (
+        <ImageViewerModal
+          isOpen={Boolean(previewImage)}
+          imageUrl={previewImage.url}
+          title={previewImage.title}
+          description={previewImage.description}
+          onClose={() => setPreviewImage(null)}
+        />
+      )}
     </div>
   );
 }
