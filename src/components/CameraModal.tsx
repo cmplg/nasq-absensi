@@ -44,7 +44,8 @@ export function CameraModal({
   const [successRecord, setSuccessRecord] = useState<AttendanceRecord | null>(null);
 
   // Early checkout check state & mandatory checklist reason
-  const earlyCheckoutData = isEarlyCheckout(employee.shiftEnd);
+  const activeTaskShiftEnd = selectedTask?.shiftEnd || employee.shiftEnd || '17:00';
+  const earlyCheckoutData = isEarlyCheckout(activeTaskShiftEnd);
   const [showEarlyWarning, setShowEarlyWarning] = useState<boolean>(
     type === 'pulang' && earlyCheckoutData.isEarly
   );
@@ -163,8 +164,25 @@ export function CameraModal({
     }
 
     const canvas = canvasRef.current;
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    // Calculate target dimensions (max 480px width or height for minimal DB storage size)
+    const rawW = video.videoWidth || 640;
+    const rawH = video.videoHeight || 480;
+    const maxDim = 480;
+    let targetW = rawW;
+    let targetH = rawH;
+
+    if (rawW > maxDim || rawH > maxDim) {
+      if (rawW > rawH) {
+        targetW = maxDim;
+        targetH = Math.round((rawH * maxDim) / rawW);
+      } else {
+        targetH = maxDim;
+        targetW = Math.round((rawW * maxDim) / rawH);
+      }
+    }
+
+    canvas.width = targetW;
+    canvas.height = targetH;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) {
@@ -174,38 +192,39 @@ export function CameraModal({
 
     setIsProcessing(true);
 
-    // 1. Draw camera video snapshot
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // 1. Draw camera video snapshot scaled to target
+    ctx.drawImage(video, 0, 0, targetW, targetH);
 
     // 2. Draw dark semi-transparent watermark banner overlay at bottom
     const now = new Date();
-    const overlayHeight = 92;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)'; // dark slate overlay
-    ctx.fillRect(0, canvas.height - overlayHeight, canvas.width, overlayHeight);
+    const overlayHeight = Math.max(76, Math.round(targetH * 0.22));
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.90)'; // dark slate overlay
+    ctx.fillRect(0, targetH - overlayHeight, targetW, overlayHeight);
 
     // Top border accent on watermark
     ctx.fillStyle = '#10b981'; // emerald accent
-    ctx.fillRect(0, canvas.height - overlayHeight, canvas.width, 3);
+    ctx.fillRect(0, targetH - overlayHeight, targetW, 3);
 
-    // Text details
+    // Dynamic text details
+    const fontSize = Math.max(11, Math.round(targetW / 36));
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = `bold ${fontSize}px sans-serif`;
     const dateStr = formatIndonesianDate(now);
     const timeStr = `${formatIndonesianTime(now)} WIB`;
-    ctx.fillText(`📅 ${dateStr} • ⏰ ${timeStr}`, 14, canvas.height - overlayHeight + 24);
+    ctx.fillText(`📅 ${dateStr} • ⏰ ${timeStr}`, 10, targetH - overlayHeight + Math.round(overlayHeight * 0.28));
 
-    ctx.font = '12px sans-serif';
+    ctx.font = `${Math.max(10, fontSize - 1)}px sans-serif`;
     ctx.fillStyle = '#e2e8f0';
-    const cleanAddress = address.length > 58 ? address.substring(0, 55) + '...' : address;
-    ctx.fillText(`📍 ${cleanAddress}`, 14, canvas.height - overlayHeight + 46);
+    const cleanAddress = address.length > 46 ? address.substring(0, 43) + '...' : address;
+    ctx.fillText(`📍 ${cleanAddress}`, 10, targetH - overlayHeight + Math.round(overlayHeight * 0.58));
 
-    ctx.font = 'bold 11px monospace';
+    ctx.font = `bold ${Math.max(9, fontSize - 2)}px monospace`;
     ctx.fillStyle = '#a7f3d0';
-    const gpsText = `🌐 GPS: ${userLat ? userLat.toFixed(5) : '-'}, ${userLng ? userLng.toFixed(5) : '-'} • ${employee.name}`;
-    ctx.fillText(gpsText, 14, canvas.height - overlayHeight + 68);
+    const gpsText = `🌐 GPS: ${userLat ? userLat.toFixed(4) : '-'}, ${userLng ? userLng.toFixed(4) : '-'} • ${employee.name}`;
+    ctx.fillText(gpsText, 10, targetH - overlayHeight + Math.round(overlayHeight * 0.86));
 
-    // Get final base64 string
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
+    // Get final compressed base64 string (0.50 JPEG quality for minimum DB storage size ~12-18KB)
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.50);
 
     // STRICT PHOTO CAPTURE VALIDATION: If photo string is invalid or empty, reject and ask to repeat!
     if (!dataUrl || dataUrl.length < 500) {
@@ -221,18 +240,29 @@ export function CameraModal({
       stream.getTracks().forEach((track) => track.stop());
     }
 
-    // Calculate attendance status (Tepat Waktu vs Terlambat vs Pulang Cepat)
+    // Calculate attendance status (Tepat Waktu vs Terlambat vs Kurang Jam Kerja)
+    const activeShiftStart = selectedTask?.shiftStart || employee.shiftStart || '08:00';
+    const activeShiftEnd = selectedTask?.shiftEnd || employee.shiftEnd || '17:00';
+
     const currentHours = now.getHours();
     const currentMinutes = now.getMinutes();
-    const [shiftH, shiftM] = employee.shiftStart.split(':').map(Number);
+    const currentTotalMins = currentHours * 60 + currentMinutes;
+
+    const [startH, startM] = activeShiftStart.split(':').map(Number);
+    const startTotalMins = startH * 60 + (startM || 0);
+
+    const [endH, endM] = activeShiftEnd.split(':').map(Number);
+    const endTotalMins = endH * 60 + (endM || 0);
 
     let status: 'tepat_waktu' | 'terlambat' | 'pulang_cepat' = 'tepat_waktu';
     if (type === 'masuk') {
-      if (currentHours > shiftH || (currentHours === shiftH && currentMinutes > shiftM)) {
+      // Absen terlambat: dilakukan setelah jam shift dimulai
+      if (currentTotalMins > startTotalMins) {
         status = 'terlambat';
       }
     } else if (type === 'pulang') {
-      if (earlyCheckoutData.isEarly) {
+      // Absen kurang jam kerja: absen pulang yang dilakukan sebelum jam kerja selesai
+      if (currentTotalMins < endTotalMins) {
         status = 'pulang_cepat';
       }
     }

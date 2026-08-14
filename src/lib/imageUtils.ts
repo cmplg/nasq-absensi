@@ -4,9 +4,9 @@
 
 export function compressAndResizeImage(
   dataUrl: string,
-  maxWidth = 600,
-  maxHeight = 600,
-  quality = 0.8
+  maxWidth = 480,
+  maxHeight = 480,
+  quality = 0.50
 ): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -43,9 +43,9 @@ export function compressAndResizeImage(
 
 export function readAndCompressFile(
   file: File,
-  maxWidth = 600,
-  maxHeight = 600,
-  quality = 0.8
+  maxWidth = 480,
+  maxHeight = 480,
+  quality = 0.50
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     // Fast path using URL.createObjectURL for mobile Chrome efficiency

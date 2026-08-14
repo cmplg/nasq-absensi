@@ -14,6 +14,20 @@ import {
   fetchAttendanceFromNeon,
   saveAttendanceToNeon,
 } from './neonDb';
+import {
+  isSupabaseConfigured,
+  fetchAdminConfigFromSupabase,
+  saveAdminConfigToSupabase,
+  fetchEmployeesFromSupabase,
+  saveEmployeeToSupabase,
+  deleteEmployeeFromSupabase,
+  fetchTasksFromSupabase,
+  saveTaskToSupabase,
+  deleteTaskFromSupabase,
+  fetchAttendanceFromSupabase,
+  saveAttendanceToSupabase,
+  subscribeToSupabaseRealtime,
+} from './supabaseDb';
 
 export type { AdminConfig };
 export { DEFAULT_ADMIN_CONFIG, SUPERUSER_EMPLOYEE };
@@ -65,6 +79,24 @@ let isSyncInitialized = false;
 
 export async function refreshAllDataFromBackend() {
   try {
+    if (isSupabaseConfigured()) {
+      const [cfg, emps, tasks, att] = await Promise.all([
+        fetchAdminConfigFromSupabase(),
+        fetchEmployeesFromSupabase(),
+        fetchTasksFromSupabase(),
+        fetchAttendanceFromSupabase(),
+      ]);
+
+      if (cfg) memAdminConfig = cfg;
+      if (emps && emps.length > 0) memEmployees = emps;
+      if (tasks) memTasks = tasks;
+      if (att) memAttendance = att;
+
+      notifyDataChanged();
+      return;
+    }
+
+    // Fallback to Neon/Postgres
     const [cfg, emps, tasks, att] = await Promise.all([
       fetchAdminConfigFromNeon(),
       fetchEmployeesFromNeon(),
@@ -72,18 +104,10 @@ export async function refreshAllDataFromBackend() {
       fetchAttendanceFromNeon(),
     ]);
 
-    if (cfg) {
-      memAdminConfig = cfg;
-    }
-    if (emps && emps.length > 0) {
-      memEmployees = emps;
-    }
-    if (tasks) {
-      memTasks = tasks;
-    }
-    if (att) {
-      memAttendance = att;
-    }
+    if (cfg) memAdminConfig = cfg;
+    if (emps && emps.length > 0) memEmployees = emps;
+    if (tasks) memTasks = tasks;
+    if (att) memAttendance = att;
 
     notifyDataChanged();
   } catch (err) {
@@ -105,13 +129,20 @@ export function initFirestoreSync() {
     // ignore
   }
 
-  // Initial fetch from Neon
+  // Initial fetch
   refreshAllDataFromBackend();
 
-  // Poll Neon database every 4 seconds for instant cross-device updates
-  setInterval(() => {
-    refreshAllDataFromBackend();
-  }, 4000);
+  if (isSupabaseConfigured()) {
+    // Subscribe to instant Supabase realtime events (No high bandwidth polling needed!)
+    subscribeToSupabaseRealtime(() => {
+      refreshAllDataFromBackend();
+    });
+  } else {
+    // Fallback polling for Neon
+    setInterval(() => {
+      refreshAllDataFromBackend();
+    }, 4000);
+  }
 }
 
 // Server Actions
@@ -119,10 +150,14 @@ export async function syncSaveAdminConfig(config: AdminConfig) {
   memAdminConfig = config;
   notifyDataChanged();
   try {
-    await saveAdminConfigToNeon(config);
+    if (isSupabaseConfigured()) {
+      await saveAdminConfigToSupabase(config);
+    } else {
+      await saveAdminConfigToNeon(config);
+    }
     await refreshAllDataFromBackend();
   } catch (err) {
-    console.error('Gagal menyimpan Admin Config ke Neon Database:', err);
+    console.error('Gagal menyimpan Admin Config ke Cloud Database:', err);
   }
 }
 
@@ -136,10 +171,14 @@ export async function syncSaveEmployee(employee: Employee) {
   notifyDataChanged();
 
   try {
-    await saveEmployeeToNeon(employee);
+    if (isSupabaseConfigured()) {
+      await saveEmployeeToSupabase(employee);
+    } else {
+      await saveEmployeeToNeon(employee);
+    }
     await refreshAllDataFromBackend();
   } catch (err) {
-    console.error('Gagal menyimpan Karyawan ke Neon Database:', err);
+    console.error('Gagal menyimpan Karyawan ke Cloud Database:', err);
   }
 }
 
@@ -148,10 +187,14 @@ export async function syncDeleteEmployee(employeeId: string) {
   notifyDataChanged();
 
   try {
-    await deleteEmployeeFromNeon(employeeId);
+    if (isSupabaseConfigured()) {
+      await deleteEmployeeFromSupabase(employeeId);
+    } else {
+      await deleteEmployeeFromNeon(employeeId);
+    }
     await refreshAllDataFromBackend();
   } catch (err) {
-    console.error('Gagal menghapus Karyawan dari Neon Database:', err);
+    console.error('Gagal menghapus Karyawan dari Cloud Database:', err);
   }
 }
 
@@ -173,10 +216,14 @@ export async function syncSaveTask(task: TaskLocation) {
   notifyDataChanged();
 
   try {
-    await saveTaskToNeon(task);
+    if (isSupabaseConfigured()) {
+      await saveTaskToSupabase(task);
+    } else {
+      await saveTaskToNeon(task);
+    }
     await refreshAllDataFromBackend();
   } catch (err) {
-    console.error('Gagal menyimpan Tugas ke Neon Database:', err);
+    console.error('Gagal menyimpan Tugas ke Cloud Database:', err);
   }
 }
 
@@ -185,10 +232,14 @@ export async function syncDeleteTask(taskId: string) {
   notifyDataChanged();
 
   try {
-    await deleteTaskFromNeon(taskId);
+    if (isSupabaseConfigured()) {
+      await deleteTaskFromSupabase(taskId);
+    } else {
+      await deleteTaskFromNeon(taskId);
+    }
     await refreshAllDataFromBackend();
   } catch (err) {
-    console.error('Gagal menghapus Tugas dari Neon Database:', err);
+    console.error('Gagal menghapus Tugas dari Cloud Database:', err);
   }
 }
 
@@ -205,10 +256,14 @@ export async function syncAddAttendanceRecord(record: AttendanceRecord) {
   notifyDataChanged();
 
   try {
-    await saveAttendanceToNeon(record);
+    if (isSupabaseConfigured()) {
+      await saveAttendanceToSupabase(record);
+    } else {
+      await saveAttendanceToNeon(record);
+    }
     await refreshAllDataFromBackend();
   } catch (err) {
-    console.error('Gagal menyimpan Presensi ke Neon Database:', err);
+    console.error('Gagal menyimpan Presensi ke Cloud Database:', err);
   }
 }
 
@@ -229,6 +284,3 @@ export async function fetchAdminConfigDirectFromFirestore(): Promise<AdminConfig
   await refreshAllDataFromBackend();
   return getLiveAdminConfig();
 }
-
-
-

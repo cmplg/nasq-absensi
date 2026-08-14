@@ -171,24 +171,24 @@ export function KaryawanRiwayat({ employee, records, tasks }: KaryawanRiwayatPro
               </div>
             </div>
 
-            {/* Quick Export Actions */}
+            {/* Quick Export Actions (Icons only) */}
             <div className="flex items-center space-x-1.5">
               <button
                 type="button"
                 onClick={() => setShowWAShareModal(true)}
-                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] rounded-xl shadow-xs transition flex items-center space-x-1.5"
+                title="Bagikan Rekap ke WhatsApp"
+                className="p-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-2xs transition flex items-center justify-center shrink-0"
               >
-                <Share2 className="w-3.5 h-3.5 text-emerald-200" />
-                <span>Share WA</span>
+                <Share2 className="w-4 h-4 text-emerald-100" />
               </button>
 
               <button
                 type="button"
                 onClick={() => printRekapPDF(exportData)}
-                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-[11px] rounded-xl transition flex items-center space-x-1.5"
+                title="Cetak Laporan PDF"
+                className="p-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl transition flex items-center justify-center shrink-0"
               >
-                <Printer className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Cetak PDF</span>
+                <Printer className="w-4 h-4 text-emerald-400" />
               </button>
             </div>
           </div>
@@ -222,15 +222,23 @@ export function KaryawanRiwayat({ employee, records, tasks }: KaryawanRiwayatPro
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2">
                         <span className="font-bold text-slate-900 text-sm">
-                          {r.type === 'masuk' ? 'Absen Datang' : 'Absen Pulang'}
+                          {r.type === 'masuk' ? 'Absen Datang' : r.type === 'pulang' ? 'Absen Pulang' : 'Pengajuan Izin'}
                         </span>
-                        {r.status === 'tepat_waktu' ? (
-                          <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200">
+                        {r.type === 'izin' ? (
+                          <span className="bg-blue-50 text-blue-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-blue-200">
+                            Izin / Tidak Hadir
+                          </span>
+                        ) : r.status === 'tepat_waktu' ? (
+                          <span className="bg-emerald-50 text-emerald-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-200">
                             Tepat Waktu
                           </span>
+                        ) : r.status === 'terlambat' ? (
+                          <span className="bg-rose-50 text-rose-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-rose-200" title="Absen dilakukan setelah jam shift dimulai">
+                            Terlambat Masuk
+                          </span>
                         ) : (
-                          <span className="bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-200">
-                            Terlambat
+                          <span className="bg-amber-50 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-200" title="Absen pulang dilakukan sebelum jam kerja selesai">
+                            Kurang Jam Kerja
                           </span>
                         )}
                       </div>

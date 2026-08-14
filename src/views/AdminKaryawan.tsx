@@ -111,7 +111,7 @@ export function AdminKaryawan({
       const file = e.target.files[0];
       setIsUploadingPhoto(true);
       try {
-        const compressed = await readAndCompressFile(file, 600, 600, 0.82);
+        const compressed = await readAndCompressFile(file, 480, 480, 0.50);
         setFormData((prev) => ({
           ...prev,
           masterPhotos: [compressed], // Replace with single master photo

@@ -154,33 +154,33 @@ export function AdminRekap({
           </p>
         </div>
 
-        {/* Action Export Options: WhatsApp, PDF, CSV */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        {/* Action Export Options: WhatsApp, PDF, CSV (Icons Only) */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onClick={() => setShowWAShareModal(true)}
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-2xl shadow-md shadow-emerald-600/20 transition flex items-center space-x-2"
+            title="Bagikan Teks Rekap ke WhatsApp"
+            className="p-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl shadow-md shadow-emerald-600/20 transition flex items-center justify-center shrink-0"
           >
-            <Share2 className="w-4 h-4 text-emerald-200" />
-            <span>Share WA (Teks Rapih)</span>
+            <Share2 className="w-4 h-4 text-emerald-100" />
           </button>
 
           <button
             type="button"
             onClick={handleExportPDF}
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-2xl shadow-md transition flex items-center space-x-2"
+            title="Cetak Laporan PDF"
+            className="p-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl shadow-md transition flex items-center justify-center shrink-0"
           >
             <Printer className="w-4 h-4 text-emerald-400" />
-            <span>Cetak / Export PDF</span>
           </button>
 
           <button
             type="button"
             onClick={handleExportCSV}
-            className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-2xl border border-slate-300 transition flex items-center space-x-2"
+            title="Export Data CSV"
+            className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-2xl border border-slate-300 transition flex items-center justify-center shrink-0"
           >
             <Download className="w-4 h-4 text-slate-600" />
-            <span>Export CSV</span>
           </button>
         </div>
       </div>
@@ -440,28 +440,28 @@ export function AdminRekap({
 
                     <td className="p-4 space-y-1">
                       {r.status === 'tepat_waktu' && (
-                        <span className="inline-block px-2.5 py-1 bg-emerald-50 text-emerald-700 font-bold rounded-full border border-emerald-200 text-[11px]">
+                        <span className="inline-block px-2.5 py-1 bg-emerald-50 text-emerald-700 font-extrabold rounded-full border border-emerald-200 text-[11px]">
                           Tepat Waktu
                         </span>
                       )}
                       {r.status === 'terlambat' && (
-                        <span className="inline-block px-2.5 py-1 bg-amber-50 text-amber-700 font-bold rounded-full border border-amber-200 text-[11px]">
-                          Terlambat
+                        <span className="inline-block px-2.5 py-1 bg-rose-50 text-rose-700 font-extrabold rounded-full border border-rose-200 text-[11px]" title="Absen dilakukan setelah jam shift dimulai">
+                          Terlambat Masuk
                         </span>
                       )}
                       {(r.status === 'pulang_cepat' || r.earlyReasonCategory) && (
                         <div>
-                          <span className="inline-block px-2.5 py-1 bg-rose-50 text-rose-700 font-bold rounded-full border border-rose-200 text-[11px]">
-                            Pulang Cepat
+                          <span className="inline-block px-2.5 py-1 bg-amber-50 text-amber-800 font-extrabold rounded-full border border-amber-200 text-[11px]" title="Absen pulang dilakukan sebelum jam kerja selesai">
+                            Kurang Jam Kerja
                           </span>
-                          <p className="text-[11px] font-semibold text-rose-900 mt-1">
+                          <p className="text-[11px] font-semibold text-amber-900 mt-1">
                             Alasan: <span className="font-extrabold">{r.earlyReasonCategory}</span>
                             {r.earlyReasonNotes && ` (${r.earlyReasonNotes})`}
                           </p>
                         </div>
                       )}
                       {r.type === 'izin' && (
-                        <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-700 font-bold rounded-full border border-blue-200 text-[11px]">
+                        <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-700 font-extrabold rounded-full border border-blue-200 text-[11px]">
                           Izin Resmi
                         </span>
                       )}

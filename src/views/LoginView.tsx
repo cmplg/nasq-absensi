@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserSession, UserRole } from '../types';
 import { getEmployees, getAdminConfig } from '../lib/storage';
 import {
@@ -9,10 +9,15 @@ import { ShieldCheck, UserCheck, KeyRound, AlertCircle, ArrowRight, Loader2 } fr
 
 interface LoginViewProps {
   onLoginSuccess: (session: UserSession) => void;
+  initialRole?: UserRole;
 }
 
-export function LoginView({ onLoginSuccess }: LoginViewProps) {
-  const [activeRole, setActiveRole] = useState<UserRole>('karyawan');
+export function LoginView({ onLoginSuccess, initialRole = 'karyawan' }: LoginViewProps) {
+  const [activeRole, setActiveRole] = useState<UserRole>(initialRole);
+
+  useEffect(() => {
+    setActiveRole(initialRole);
+  }, [initialRole]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -114,13 +119,26 @@ export function LoginView({ onLoginSuccess }: LoginViewProps) {
       <div className="relative w-full max-w-md space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-600 rounded-2xl shadow-md font-black text-white text-2xl tracking-tighter mb-1">
-            N
-          </div>
+          {getAdminConfig().companyLogoUrl ? (
+            <div className="flex justify-center mb-1">
+              <img
+                src={getAdminConfig().companyLogoUrl}
+                alt="Logo"
+                className="max-h-16 max-w-[180px] object-contain drop-shadow-sm p-1 bg-white rounded-2xl border border-slate-200"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
+            </div>
+          ) : (
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-600 rounded-2xl shadow-md font-black text-white text-2xl tracking-tighter mb-1">
+              N
+            </div>
+          )}
           <div className="flex items-center justify-center space-x-1.5">
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">NASQ</h1>
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
-            <span className="text-2xl font-extrabold text-slate-700">Absensi</span>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">
+              {getAdminConfig().companyName || 'NASQ Absensi'}
+            </h1>
           </div>
           <p className="text-xs text-slate-500 font-semibold">
             Sistem Kehadiran &amp; Management Tugas Lapangan Tim

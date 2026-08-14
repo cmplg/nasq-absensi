@@ -30,6 +30,8 @@ export interface TaskLocation {
   status: 'aktif' | 'selesai';
   locationPhoto?: string; // Base64 or image URL of the task location
   createdAt: string;
+  shiftStart?: string; // e.g. "08:00"
+  shiftEnd?: string;   // e.g. "17:00"
 }
 
 export interface AttendanceRecord {

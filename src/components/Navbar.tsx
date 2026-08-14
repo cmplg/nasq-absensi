@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { UserSession } from '../types';
+import { getAdminConfig } from '../lib/storage';
 import {
   LogOut,
   UserCheck,
@@ -11,6 +12,8 @@ import {
   FileSpreadsheet,
   ChevronDown,
   Sparkles,
+  Briefcase,
+  FileText,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -32,6 +35,8 @@ export function Navbar({
 
   const employeeNavItems = [
     { id: 'dashboard', label: 'Presensi', icon: UserCheck },
+    { id: 'tugas-saya', label: 'Tugas', icon: Briefcase },
+    { id: 'izin', label: 'Izin', icon: FileText },
     { id: 'riwayat', label: 'Riwayat', icon: Calendar },
   ];
 
@@ -48,6 +53,10 @@ export function Navbar({
     switch (activeTab) {
       case 'dashboard':
         return 'Presensi NASQ';
+      case 'tugas-saya':
+        return 'Tugas Lapangan Saya';
+      case 'izin':
+        return 'Formulir Ketidakhadiran';
       case 'riwayat':
         return 'Riwayat & Penugasan';
       case 'admin-overview':
@@ -69,13 +78,27 @@ export function Navbar({
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-xs border-b border-slate-200/80">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            {/* App Icon */}
-            <div
-              onClick={() => setActiveTab(isAdmin ? 'admin-overview' : 'dashboard')}
-              className="w-10 h-10 bg-emerald-600 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-md shadow-emerald-600/20 cursor-pointer active:scale-95 transition-transform shrink-0"
-            >
-              N
-            </div>
+            {/* App Icon (Custom ImageKit Logo or Default Emblem) */}
+            {getAdminConfig().companyLogoUrl ? (
+              <img
+                src={getAdminConfig().companyLogoUrl}
+                alt="Logo"
+                onClick={() => setActiveTab(isAdmin ? 'admin-overview' : 'dashboard')}
+                className="w-10 h-10 object-contain rounded-2xl p-1 bg-white border border-slate-200 shadow-md cursor-pointer active:scale-95 transition-transform shrink-0"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
+            ) : (
+              <div
+                onClick={() => setActiveTab(isAdmin ? 'admin-overview' : 'dashboard')}
+                className={`w-10 h-10 text-white rounded-2xl flex items-center justify-center font-black text-xl shadow-md cursor-pointer active:scale-95 transition-transform shrink-0 ${
+                  isAdmin ? 'bg-indigo-600 shadow-indigo-600/20' : 'bg-emerald-600 shadow-emerald-600/20'
+                }`}
+              >
+                N
+              </div>
+            )}
             <div>
               <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
                 {getActiveTabTitle()}

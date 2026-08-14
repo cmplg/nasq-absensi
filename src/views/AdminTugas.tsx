@@ -24,8 +24,8 @@ import {
   Camera,
 } from 'lucide-react';
 
-// Helper to scale down images for lightweight resolution (~800x600 px, ~80KB)
-const compressAndResizeImage = (dataUrl: string, maxWidth = 800, maxHeight = 600, quality = 0.82): Promise<string> => {
+// Helper to scale down images for lightweight resolution (~480x480 px, ~12KB)
+const compressAndResizeImage = (dataUrl: string, maxWidth = 480, maxHeight = 480, quality = 0.50): Promise<string> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.src = dataUrl;
@@ -159,6 +159,8 @@ export function AdminTugas({
     assignedEmployeeIds: string[];
     startDate: string;
     endDate: string;
+    shiftStart: string;
+    shiftEnd: string;
     status: 'aktif' | 'selesai';
     locationPhoto?: string;
   }>({
@@ -171,6 +173,8 @@ export function AdminTugas({
     assignedEmployeeIds: [],
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0],
+    shiftStart: '08:00',
+    shiftEnd: '17:00',
     status: 'aktif',
     locationPhoto: '',
   });
@@ -238,6 +242,8 @@ export function AdminTugas({
       assignedEmployeeIds: employees.length > 0 ? [employees[0].id] : [],
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0],
+      shiftStart: '08:00',
+      shiftEnd: '17:00',
       status: 'aktif',
       locationPhoto: '',
     });
@@ -268,6 +274,8 @@ export function AdminTugas({
       assignedEmployeeIds: task.assignedEmployeeIds || [],
       startDate: task.startDate,
       endDate: task.endDate,
+      shiftStart: task.shiftStart || '08:00',
+      shiftEnd: task.shiftEnd || '17:00',
       status: task.status,
       locationPhoto: task.locationPhoto || '',
     });
@@ -302,6 +310,8 @@ export function AdminTugas({
       assignedEmployeeIds: formData.assignedEmployeeIds,
       startDate: formData.startDate,
       endDate: formData.endDate,
+      shiftStart: formData.shiftStart,
+      shiftEnd: formData.shiftEnd,
       status: formData.status,
       locationPhoto: formData.locationPhoto,
       createdAt: editingTask ? editingTask.createdAt : new Date().toISOString(),
@@ -700,6 +710,30 @@ export function AdminTugas({
                     value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                     className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Jadwal Shift Hari Ini / Jam Kerja Tugas */}
+              <div className="grid grid-cols-2 gap-3 p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl">
+                <div>
+                  <label className="block font-bold text-emerald-900 text-xs mb-1">Shift Mulai (Jam Masuk)</label>
+                  <input
+                    type="time"
+                    required
+                    value={formData.shiftStart}
+                    onChange={(e) => setFormData({ ...formData, shiftStart: e.target.value })}
+                    className="w-full p-2 bg-white border border-emerald-300 rounded-xl font-bold text-slate-900 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-emerald-900 text-xs mb-1">Shift Selesai (Jam Pulang)</label>
+                  <input
+                    type="time"
+                    required
+                    value={formData.shiftEnd}
+                    onChange={(e) => setFormData({ ...formData, shiftEnd: e.target.value })}
+                    className="w-full p-2 bg-white border border-emerald-300 rounded-xl font-bold text-slate-900 text-sm"
                   />
                 </div>
               </div>

@@ -5,12 +5,16 @@ export interface AdminConfig {
   username: string;
   password: string;
   name: string;
+  companyLogoUrl?: string;
+  companyName?: string;
 }
 
 export const DEFAULT_ADMIN_CONFIG: AdminConfig = {
   username: 'admin',
   password: 'testadmin',
   name: 'Administrator NASQ',
+  companyLogoUrl: '',
+  companyName: 'NASQ ABSENSI',
 };
 
 export const SUPERUSER_EMPLOYEE: Employee = {
@@ -48,9 +52,13 @@ export async function ensureNeonTables() {
         id VARCHAR(50) PRIMARY KEY DEFAULT 'main',
         username VARCHAR(100) NOT NULL,
         password VARCHAR(100) NOT NULL,
-        name VARCHAR(150) NOT NULL
+        name VARCHAR(150) NOT NULL,
+        company_logo_url TEXT,
+        company_name VARCHAR(150)
       );
     `;
+    await sql`ALTER TABLE admin_config ADD COLUMN IF NOT EXISTS company_logo_url TEXT;`;
+    await sql`ALTER TABLE admin_config ADD COLUMN IF NOT EXISTS company_name VARCHAR(150);`;
 
     // 2. Create employees
     await sql`
@@ -96,6 +104,8 @@ export async function ensureNeonTables() {
     await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS end_date VARCHAR(50);`;
     await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'aktif';`;
     await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS location_photo TEXT;`;
+    await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS shift_start VARCHAR(10);`;
+    await sql`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS shift_end VARCHAR(10);`;
 
     // 4. Create attendance
     await sql`
@@ -170,9 +180,16 @@ export async function ensureNeonTables() {
 export async function fetchAdminConfigFromNeon(): Promise<AdminConfig> {
   await ensureNeonTables();
   try {
-    const rows = await sql`SELECT username, password, name FROM admin_config WHERE id = 'main'`;
+    const rows = await sql`SELECT username, password, name, company_logo_url, company_name FROM admin_config WHERE id = 'main'`;
     if (rows.length > 0) {
-      return rows[0] as AdminConfig;
+      const r = rows[0];
+      return {
+        username: r.username,
+        password: r.password,
+        name: r.name,
+        companyLogoUrl: r.company_logo_url || '',
+        companyName: r.company_name || 'NASQ ABSENSI',
+      };
     }
   } catch (err) {
     console.error('Error fetching admin_config from Neon:', err);
@@ -183,13 +200,17 @@ export async function fetchAdminConfigFromNeon(): Promise<AdminConfig> {
 export async function saveAdminConfigToNeon(config: AdminConfig): Promise<void> {
   await ensureNeonTables();
   try {
+    const logoUrl = config.companyLogoUrl || '';
+    const compName = config.companyName || 'NASQ ABSENSI';
     await sql`
-      INSERT INTO admin_config (id, username, password, name)
-      VALUES ('main', ${config.username}, ${config.password}, ${config.name})
+      INSERT INTO admin_config (id, username, password, name, company_logo_url, company_name)
+      VALUES ('main', ${config.username}, ${config.password}, ${config.name}, ${logoUrl}, ${compName})
       ON CONFLICT (id) DO UPDATE SET
         username = ${config.username},
         password = ${config.password},
-        name = ${config.name}
+        name = ${config.name},
+        company_logo_url = ${logoUrl},
+        company_name = ${compName}
     `;
   } catch (err) {
     console.error('Error saving admin_config to Neon:', err);
@@ -300,6 +321,8 @@ export async function fetchTasksFromNeon(): Promise<TaskLocation[]> {
         COALESCE(end_date, '') AS "endDate",
         COALESCE(status, 'aktif') AS "status",
         COALESCE(location_photo, '') AS "locationPhoto",
+        COALESCE(shift_start, '08:00') AS "shiftStart",
+        COALESCE(shift_end, '17:00') AS "shiftEnd",
         is_active AS "isActive",
         created_at AS "createdAt"
       FROM tasks
@@ -318,6 +341,8 @@ export async function fetchTasksFromNeon(): Promise<TaskLocation[]> {
       endDate: r.endDate || new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0],
       status: r.status || 'aktif',
       locationPhoto: r.locationPhoto || '',
+      shiftStart: r.shiftStart || '08:00',
+      shiftEnd: r.shiftEnd || '17:00',
       createdAt: r.createdAt || new Date().toISOString(),
     })) as TaskLocation[];
   } catch (err) {
@@ -333,7 +358,7 @@ export async function saveTaskToNeon(task: TaskLocation): Promise<void> {
     await sql`
       INSERT INTO tasks (
         id, title, description, address, latitude, longitude,
-        radius_meter, assigned_employee_ids, start_date, end_date, status, location_photo, is_active, created_at
+        radius_meter, assigned_employee_ids, start_date, end_date, status, location_photo, shift_start, shift_end, is_active, created_at
       ) VALUES (
         ${task.id},
         ${task.title},
@@ -347,6 +372,8 @@ export async function saveTaskToNeon(task: TaskLocation): Promise<void> {
         ${task.endDate || new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0]},
         ${task.status || 'aktif'},
         ${task.locationPhoto || ''},
+        ${task.shiftStart || '08:00'},
+        ${task.shiftEnd || '17:00'},
         ${task.status === 'aktif'},
         ${task.createdAt || new Date().toISOString()}
       )
@@ -362,6 +389,8 @@ export async function saveTaskToNeon(task: TaskLocation): Promise<void> {
         end_date = ${task.endDate || new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0]},
         status = ${task.status || 'aktif'},
         location_photo = ${task.locationPhoto || ''},
+        shift_start = ${task.shiftStart || '08:00'},
+        shift_end = ${task.shiftEnd || '17:00'},
         is_active = ${task.status === 'aktif'},
         created_at = ${task.createdAt || new Date().toISOString()}
     `;

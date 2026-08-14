@@ -120,7 +120,7 @@ export function TidakHadirModal({
     ctx.font = 'bold 13px monospace';
     ctx.fillText('VERIFIED PERMIT RECORD • TERDOKUMENTASI SISTEM ADMIN NASQ', 32, 455);
 
-    return canvas.toDataURL('image/jpeg', 0.9);
+    return canvas.toDataURL('image/jpeg', 0.50);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

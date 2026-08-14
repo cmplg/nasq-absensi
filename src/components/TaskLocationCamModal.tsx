@@ -96,9 +96,9 @@ export function TaskLocationCamModal({
     const w = video.videoWidth || 800;
     const h = video.videoHeight || 600;
 
-    // Scale down to max 800x600 for web-optimized lightweight resolution
-    const maxWidth = 800;
-    const maxHeight = 600;
+    // Scale down to max 480x480 for lightweight database storage
+    const maxWidth = 480;
+    const maxHeight = 480;
     let targetW = w;
     let targetH = h;
 
@@ -118,7 +118,7 @@ export function TaskLocationCamModal({
     if (!ctx) return;
 
     ctx.drawImage(video, 0, 0, targetW, targetH);
-    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.50);
     setCapturedImage(compressedDataUrl);
   };
 

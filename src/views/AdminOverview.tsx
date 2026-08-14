@@ -17,6 +17,11 @@ import {
   CheckCircle2,
   Lock,
   User,
+  Image,
+  Sparkles,
+  Play,
+  Link,
+  Trash2,
 } from 'lucide-react';
 
 interface AdminOverviewProps {
@@ -24,6 +29,7 @@ interface AdminOverviewProps {
   tasks: TaskLocation[];
   records: AttendanceRecord[];
   onNavigateTab: (tab: string) => void;
+  onPreviewSplashScreen?: () => void;
 }
 
 export function AdminOverview({
@@ -31,6 +37,7 @@ export function AdminOverview({
   tasks,
   records,
   onNavigateTab,
+  onPreviewSplashScreen,
 }: AdminOverviewProps) {
   const activeEmployees = employees.filter((e) => e.isActive);
   const todayStr = new Date().toISOString().split('T')[0];
@@ -46,10 +53,12 @@ export function AdminOverview({
 
   const hadirPercentage = activeEmployees.length > 0 ? Math.round((totalHadir / activeEmployees.length) * 100) : 0;
 
-  // Admin Account Editing State
+  // Admin Account & Branding Editing State
   const [adminConfig, setAdminConfigState] = useState(() => getAdminConfig());
   const [newUsername, setNewUsername] = useState(adminConfig.username);
   const [newPassword, setNewPassword] = useState(adminConfig.password);
+  const [companyLogoUrl, setCompanyLogoUrl] = useState(adminConfig.companyLogoUrl || '');
+  const [companyName, setCompanyName] = useState(adminConfig.companyName || 'NASQ ABSENSI');
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
   const handleSaveAdminConfig = (e: React.FormEvent) => {
@@ -60,10 +69,12 @@ export function AdminOverview({
       ...adminConfig,
       username: newUsername.trim(),
       password: newPassword.trim(),
+      companyLogoUrl: companyLogoUrl.trim(),
+      companyName: companyName.trim() || 'NASQ ABSENSI',
     };
     saveAdminConfig(updated);
     setAdminConfigState(updated);
-    setSaveSuccessMsg('Username dan kata sandi admin berhasil diperbarui!');
+    setSaveSuccessMsg('Pengaturan akun & logo perusahaan berhasil disimpan!');
     setTimeout(() => setSaveSuccessMsg(null), 4000);
   };
 
@@ -317,20 +328,32 @@ export function AdminOverview({
         </div>
       </div>
 
-      {/* Admin Account Settings Form Card */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-2xs space-y-4">
+      {/* Admin Account & Branding Settings Card */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-2xs space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div className="flex items-center space-x-3">
             <div className="p-2.5 bg-indigo-50 text-indigo-700 rounded-2xl border border-indigo-100">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-900 text-base">Pengaturan Akun Administrator</h3>
+              <h3 className="font-extrabold text-slate-900 text-base">Pengaturan Branding &amp; Akun Admin</h3>
               <p className="text-xs text-slate-500 font-medium">
-                Ubah username dan kata sandi login untuk akun administrator HRD
+                Atur logo ImageKit perusahaan, nama sistem, serta kredensial akun administrator
               </p>
             </div>
           </div>
+
+          {/* Test SplashScreen Button */}
+          {onPreviewSplashScreen && (
+            <button
+              type="button"
+              onClick={onPreviewSplashScreen}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-2xl text-xs font-bold transition shadow-md shadow-emerald-600/20 flex items-center space-x-2 shrink-0"
+            >
+              <Play className="w-3.5 h-3.5 text-emerald-200 fill-emerald-200" />
+              <span>Pratinjau SplashScreen</span>
+            </button>
+          )}
         </div>
 
         {saveSuccessMsg && (
@@ -340,45 +363,127 @@ export function AdminOverview({
           </div>
         )}
 
-        <form onSubmit={handleSaveAdminConfig} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs items-end">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center space-x-1.5">
-              <User className="w-3.5 h-3.5 text-slate-500" />
-              <span>Username Admin</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={newUsername}
-              onChange={(e) => setNewUsername(e.target.value)}
-              placeholder="Username admin..."
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+        <form onSubmit={handleSaveAdminConfig} className="space-y-5 text-xs">
+          {/* Logo ImageKit & Company Name Row */}
+          <div className="p-4 bg-slate-50/90 rounded-2xl border border-slate-200/80 space-y-4">
+            <div className="flex items-center space-x-2 text-slate-900 font-extrabold text-xs">
+              <Image className="w-4 h-4 text-indigo-600" />
+              <span>Kustomisasi Logo Perusahaan (Link ImageKit)</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center space-x-1.5">
+                  <Link className="w-3.5 h-3.5 text-slate-400" />
+                  <span>URL Logo ImageKit / Gambar (HTTPS)</span>
+                </label>
+                <input
+                  type="url"
+                  value={companyLogoUrl}
+                  onChange={(e) => setCompanyLogoUrl(e.target.value)}
+                  placeholder="Contoh: https://ik.imagekit.io/username/logo-perusahaan.png"
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-400"
+                />
+                <div className="flex items-center justify-between mt-1.5">
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Masukkan URL gambar dari ImageKit atau CDN gambar HTTPS lainnya.
+                  </p>
+                  {companyLogoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setCompanyLogoUrl('')}
+                      className="text-[11px] font-bold text-rose-600 hover:underline flex items-center space-x-1"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      <span>Hapus Logo</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Nama Perusahaan / Aplikasi
+                </label>
+                <input
+                  type="text"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Contoh: PT Sukses Mandiri / NASQ ABSENSI"
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-[11px] text-slate-500 font-medium mt-1.5">
+                  Nama ini akan muncul pada judul Splash Screen, Header Navbar, dan Halaman Login.
+                </p>
+              </div>
+            </div>
+
+            {/* Live Logo Preview Box */}
+            <div className="pt-2 flex items-center space-x-4 border-t border-slate-200/60">
+              <span className="text-[11px] font-bold text-slate-600">Pratinjau Logo Aktif:</span>
+              {companyLogoUrl ? (
+                <div className="flex items-center space-x-3 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs">
+                  <img
+                    src={companyLogoUrl}
+                    alt="Pratinjau Logo"
+                    className="h-9 max-w-[140px] object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                  <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Gambar Valid
+                  </span>
+                </div>
+              ) : (
+                <span className="text-xs font-semibold text-slate-400 italic">
+                  Belum ada URL logo kustom (menggunakan logo default huruf N).
+                </span>
+              )}
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center space-x-1.5">
-              <Lock className="w-3.5 h-3.5 text-slate-500" />
-              <span>Kata Sandi Admin</span>
-            </label>
-            <input
-              type="text"
-              required
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Kata sandi admin..."
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
+          {/* Admin Credentials Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end pt-1">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center space-x-1.5">
+                <User className="w-3.5 h-3.5 text-slate-500" />
+                <span>Username Admin</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                placeholder="Username admin..."
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
 
-          <div>
-            <button
-              type="submit"
-              className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold text-xs transition shadow-sm flex items-center justify-center space-x-2"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>Simpan Perubahan Akun</span>
-            </button>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center space-x-1.5">
+                <Lock className="w-3.5 h-3.5 text-slate-500" />
+                <span>Kata Sandi Admin</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Kata sandi admin..."
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-extrabold text-xs transition shadow-sm flex items-center justify-center space-x-2"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>Simpan Pengaturan Admin</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>

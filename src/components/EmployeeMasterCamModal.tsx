@@ -107,10 +107,10 @@ export function EmployeeMasterCamModal({
     }
 
     ctx.drawImage(video, 0, 0, w, h);
-    const rawData = canvas.toDataURL('image/jpeg', 0.85);
+    const rawData = canvas.toDataURL('image/jpeg', 0.50);
 
-    // Compress to 600x600 square max for master photo
-    const compressed = await compressAndResizeImage(rawData, 600, 600, 0.82);
+    // Compress to 400x400 square max for master photo
+    const compressed = await compressAndResizeImage(rawData, 400, 400, 0.50);
     setCapturedImage(compressed);
   };
 

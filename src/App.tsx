@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { UserSession, Employee, TaskLocation, AttendanceRecord } from './types';
+import { UserSession, UserRole, Employee, TaskLocation, AttendanceRecord } from './types';
 import {
   getEmployees,
   saveSingleEmployee,
@@ -23,9 +23,12 @@ import { initFirestoreSync, DATA_UPDATED_EVENT } from './lib/firestoreSync';
 
 import { Navbar } from './components/Navbar';
 import { CameraModal } from './components/CameraModal';
+import { SplashScreen } from './components/SplashScreen';
 
 import { LoginView } from './views/LoginView';
 import { KaryawanDashboard } from './views/KaryawanDashboard';
+import { KaryawanTugas } from './views/KaryawanTugas';
+import { KaryawanIzin } from './views/KaryawanIzin';
 import { KaryawanRiwayat } from './views/KaryawanRiwayat';
 
 import { AdminOverview } from './views/AdminOverview';
@@ -64,10 +67,14 @@ export default function App() {
   // Camera modal state
   const [absenModalType, setAbsenModalType] = useState<'masuk' | 'pulang' | null>(null);
 
+  // Splash Screen & Login State
+  const [showSplash, setShowSplash] = useState(true);
+
   // Sync tab with role on session change
   const handleLoginSuccess = (newSession: UserSession) => {
     setCurrentSession(newSession);
     setSession(newSession);
+    setShowSplash(false);
     if (newSession.role === 'admin') {
       setActiveTab('admin-overview');
     } else {
@@ -78,6 +85,7 @@ export default function App() {
   const handleLogout = () => {
     setCurrentSession(null);
     setSession(null);
+    setShowSplash(true);
   };
 
   const handleSwitchRole = (newRole: 'karyawan' | 'admin') => {
@@ -168,8 +176,15 @@ export default function App() {
     (r) => r.employeeId === currentEmployee?.id && r.dateString === todayStr
   );
 
-  if (!session) {
-    return <LoginView onLoginSuccess={handleLoginSuccess} />;
+  if (!session || showSplash) {
+    const config = getAdminConfig();
+    return (
+      <SplashScreen
+        onLoginSuccess={handleLoginSuccess}
+        logoUrl={config.companyLogoUrl}
+        companyName={config.companyName}
+      />
+    );
   }
 
   return (
@@ -193,7 +208,24 @@ export default function App() {
                 assignedTasks={currentAssignedTasks}
                 onOpenAbsenModal={(type) => setAbsenModalType(type)}
                 onNavigateToHistory={() => setActiveTab('riwayat')}
+                onNavigateToTab={(tab) => setActiveTab(tab)}
                 onAttendanceSubmit={handleAttendanceSuccess}
+              />
+            )}
+
+            {activeTab === 'tugas-saya' && (
+              <KaryawanTugas
+                employee={currentEmployee}
+                assignedTasks={currentAssignedTasks}
+              />
+            )}
+
+            {activeTab === 'izin' && (
+              <KaryawanIzin
+                employee={currentEmployee}
+                assignedTasks={currentAssignedTasks}
+                todayRecords={todayEmployeeRecords}
+                onSubmitSuccess={handleAttendanceSuccess}
               />
             )}
 
@@ -213,6 +245,7 @@ export default function App() {
                 tasks={tasks}
                 records={records}
                 onNavigateTab={setActiveTab}
+                onPreviewSplashScreen={() => setShowSplash(true)}
               />
             )}
 
