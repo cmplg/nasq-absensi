@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "adminConfig": {
+      "title": "Admin Config",
+      "description": "System administrator configuration credentials and name",
+      "properties": {
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["username", "password", "name"]
+    },
+    "employees": {
+      "title": "Employee",
+      "description": "Employee profiles, master face photos, shift times, and credentials",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "position": { "type": "string" },
+        "department": { "type": "string" },
+        "shiftStart": { "type": "string" },
+        "shiftEnd": { "type": "string" },
+        "masterPhotos": { "type": "array", "items": { "type": "string" } },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "isDeveloper": { "type": "boolean" }
+      },
+      "required": ["id", "name", "username", "position", "department", "shiftStart", "shiftEnd", "isActive"]
+    },
+    "tasks": {
+      "title": "Task Location",
+      "description": "Geofenced attendance assignment locations",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "address": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "radiusMeter": { "type": "number" },
+        "assignedEmployeeIds": { "type": "array", "items": { "type": "string" } },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "latitude", "longitude", "radiusMeter", "isActive"]
+    },
+    "attendance": {
+      "title": "Attendance Record",
+      "description": "Clock in, clock out, and leave/permit records",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "employeeName": { "type": "string" },
+        "employeePosition": { "type": "string" },
+        "type": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "dateString": { "type": "string" },
+        "timeString": { "type": "string" },
+        "status": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "address": { "type": "string" },
+        "photo": { "type": "string" },
+        "notes": { "type": "string" },
+        "earlyReasonCategory": { "type": "string" },
+        "earlyReasonNotes": { "type": "string" },
+        "taskId": { "type": "string" },
+        "taskTitle": { "type": "string" },
+        "verifiedFace": { "type": "boolean" },
+        "faceConfidence": { "type": "number" }
+      },
+      "required": ["id", "employeeId", "employeeName", "type", "timestamp", "dateString", "timeString", "status"]
+    }
+  }
+}
